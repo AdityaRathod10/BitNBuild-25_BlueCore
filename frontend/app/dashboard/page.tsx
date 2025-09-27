@@ -5,6 +5,7 @@ import { TaxSavingMeter } from "@/components/dashboard/tax-saving-meter"
 import { CashFlowOverview } from "@/components/dashboard/cash-flow-overview"
 import { FinancialSummary } from "@/components/dashboard/financial-summary"
 import { AuthGuard } from "@/components/AuthGuard"
+import { DynamicGreeting } from "@/components/dynamic-greeting"
 
 export default function DashboardPage() {
   return (
@@ -14,7 +15,7 @@ export default function DashboardPage() {
         <div className="space-y-8">
           {/* Welcome Section */}
           <div className="space-y-2">
-            <h1 className="text-3xl font-bold text-balance">Good morning, Rahul</h1>
+            <DynamicGreeting />
             <p className="text-muted-foreground text-pretty">Here's your financial overview for December 2024</p>
           </div>
 
