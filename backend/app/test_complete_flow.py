@@ -4,12 +4,12 @@ Complete Flow Tester - Data Ingestion → Tax/CIBIL Analysis
 
 import os
 import sys
-from agents.data_ingestion_agent import DataIngestionAgent
+from app.agents.data_ingestion_agent import DataIngestionAgent
 
 # Try to import other agents
 try:
-    from agents.tax_calculation_agent import TaxCalculationAgent
-    from agents.cibil_analysis_agent import CibilAnalysisAgent
+    from app.agents.tax_calculation_agent import TaxCalculationAgent
+    from app.agents.cibil_analysis_agent import CibilAnalysisAgent
 except ImportError as e:
     print(f"⚠️  Could not import other agents: {e}")
     TaxCalculationAgent = None

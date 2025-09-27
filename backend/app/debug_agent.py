@@ -46,7 +46,7 @@ except ImportError as e:
 
 # Check our Tax Agent
 try:
-    from agents.tax_calculation_agent import TaxCalculationAgent
+    from app.agents.tax_calculation_agent import TaxCalculationAgent
     tax_agent = TaxCalculationAgent()
     print(f"Tax Agent Mode: {tax_agent.use_real_agent}")
     print(f"Tax Agent Status: {'Real' if tax_agent.use_real_agent else 'Mock'}")

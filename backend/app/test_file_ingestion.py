@@ -2,7 +2,7 @@
 Test script for file ingestion with your actual data
 """
 
-from agents.data_ingestion_agent import DataIngestionAgent
+from app.agents.data_ingestion_agent import DataIngestionAgent
 import os
 
 def test_with_your_file():

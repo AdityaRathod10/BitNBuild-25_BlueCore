@@ -13,9 +13,9 @@ from datetime import datetime
 import logging
 
 # Import our agents
-from agents.tax_calculation_agent import TaxCalculationAgent
-from agents.cibil_analysis_agent import CibilAnalysisAgent
-from agents.data_ingestion_agent import DataIngestionAgent
+from app.agents.tax_calculation_agent import TaxCalculationAgent
+from app.agents.cibil_analysis_agent import CibilAnalysisAgent
+from app.agents.data_ingestion_agent import DataIngestionAgent
 
 from dotenv import load_dotenv
 
@@ -308,7 +308,7 @@ async def get_cibil_sample_data(num_users: int = 10):
         raise HTTPException(status_code=500, detail="CIBIL agent not initialized")
     
     try:
-        from agents.cibil_analysis_agent import generate_sample_credit_data
+        from app.agents.cibil_analysis_agent import generate_sample_credit_data
         
         # Generate sample data
         sample_data = generate_sample_credit_data(num_users)

@@ -9,7 +9,7 @@ import os
 # Add the app directory to the path
 sys.path.append(os.path.join(os.path.dirname(__file__), '.'))
 
-from agents.tax_calculation_agent import TaxCalculationAgent
+from app.agents.tax_calculation_agent import TaxCalculationAgent
 
 def test_tax_calculations():
     """Test various tax calculation scenarios"""
