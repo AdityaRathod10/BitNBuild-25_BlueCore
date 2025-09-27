@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
-import { Plus, TrendingUp, AlertCircle, CheckCircle, Loader2 } from "lucide-react"
+import { TrendingUp, AlertCircle, CheckCircle, Loader2 } from "lucide-react"
 import { userApi } from "@/lib/api"
 import { useAuth } from "@/contexts/AuthContext"
 
@@ -376,10 +376,6 @@ export function DeductionBreakdown() {
                         </li>
                       ))}
                     </ul>
-                    <Button size="sm" className="w-full">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Invest Now
-                    </Button>
                   </div>
                 )}
               </div>
@@ -387,21 +383,6 @@ export function DeductionBreakdown() {
           })}
         </div>
 
-        {/* Action Button */}
-        <Button 
-          className="w-full" 
-          size="lg"
-          onClick={() => {
-            // Scroll to the regime simulator to encourage users to update their inputs
-            const regimeSimulator = document.querySelector('[data-testid="regime-simulator"]') || 
-                                   document.querySelector('.regime-simulator')
-            if (regimeSimulator) {
-              regimeSimulator.scrollIntoView({ behavior: 'smooth' })
-            }
-          }}
-        >
-          Update Tax Details
-        </Button>
       </CardContent>
     </Card>
   )

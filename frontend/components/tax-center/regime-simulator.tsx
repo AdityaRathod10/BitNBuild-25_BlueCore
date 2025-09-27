@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Calculator, TrendingDown, CheckCircle, Target, Lightbulb, ArrowRight, Loader2, AlertCircle, Save } from "lucide-react"
+import { Calculator, TrendingDown, CheckCircle, Target, Lightbulb, Loader2, AlertCircle, Save } from "lucide-react"
 import { taxApi, TaxCalculationRequest, TaxCalculationResponse, TaxOptimizationRequest, TaxOptimizationResponse, userApi } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/contexts/AuthContext"
@@ -1306,15 +1306,6 @@ export function RegimeSimulator() {
                       Save ₹{totalSavings.toLocaleString("en-IN")} annually with better tax efficiency
                     </p>
                   </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm">
-                    Learn More
-                  </Button>
-                  <Button size="sm">
-                    Apply Choice
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
                 </div>
               </div>
             </CardContent>
