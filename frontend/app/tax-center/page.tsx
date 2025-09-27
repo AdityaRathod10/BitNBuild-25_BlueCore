@@ -33,7 +33,7 @@ export default function TaxCenterPage() {
         </TabsList>
 
         <TabsContent value="optimizer" className="space-y-6">
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="space-y-6">
             <RegimeSimulator />
             <DeductionBreakdown />
           </div>

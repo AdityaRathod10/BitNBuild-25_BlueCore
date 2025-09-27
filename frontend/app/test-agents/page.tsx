@@ -4,381 +4,387 @@ import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useDropzone } from "react-dropzone"
-import { Upload, FileText, Bot, TrendingUp, Calculator, AlertCircle, CheckCircle, TestTube } from "lucide-react"
+import { Loader2, CheckCircle, XCircle, Bot, Calculator, CreditCard, FileText } from "lucide-react"
+import { healthApi, taxApi, cibilApi, documentApi } from "@/lib/api"
+import { useToast } from "@/hooks/use-toast"
 
-interface AnalysisResult {
-  status: string
-  results?: {
-    processed_data: any
-    tax_analysis: any
-    cibil_analysis: any
-    summary: {
-      financial_health_score: number
-      top_recommendations: string[]
-      next_actions: Array<{
-        priority: string
-        action: string
-        timeline: string
-        impact: string
-      }>
-    }
-  }
+interface TestResult {
+  name: string
+  status: 'pending' | 'success' | 'error'
   message: string
+  data?: any
 }
 
 export default function TestAgentsPage() {
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null)
-  const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [backendStatus, setBackendStatus] = useState<string>("unknown")
+  const { success, error: showError } = useToast()
+  const [testResults, setTestResults] = useState<TestResult[]>([])
+  const [isRunning, setIsRunning] = useState(false)
 
-  // Check backend health
-  const checkBackendHealth = async () => {
+  const runAllTests = async () => {
+    setIsRunning(true)
+    setTestResults([])
+
+    const tests: TestResult[] = [
+      { name: "Health Check", status: 'pending', message: "Checking API health..." },
+      { name: "Tax Calculation", status: 'pending', message: "Testing tax calculation..." },
+      { name: "Tax Optimization", status: 'pending', message: "Testing tax optimization..." },
+      { name: "CIBIL Analysis", status: 'pending', message: "Testing CIBIL analysis..." },
+      { name: "CIBIL Scenarios", status: 'pending', message: "Testing CIBIL scenarios..." },
+      { name: "Document Analysis", status: 'pending', message: "Testing document analysis..." },
+    ]
+
+    setTestResults([...tests])
+
+    // Test 1: Health Check
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/health')
-      const data = await response.json()
-      setBackendStatus(data.status === 'healthy' ? 'connected' : 'error')
-      return data
-    } catch (error) {
-      setBackendStatus('disconnected')
-      throw error
-    }
-  }
-
-  // File Upload Component
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    accept: {
-      'text/csv': ['.csv'],
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
-      'application/vnd.ms-excel': ['.xls']
-    },
-    maxFiles: 1,
-    onDrop: (acceptedFiles) => {
-      if (acceptedFiles.length > 0) {
-        setUploadedFile(acceptedFiles[0])
-        setError(null)
+      const healthResult = await healthApi.checkHealth()
+      tests[0] = {
+        name: "Health Check",
+        status: 'success',
+        message: "API is healthy",
+        data: healthResult
       }
-    }
-  })
-
-  const handleAnalysis = async () => {
-    if (!uploadedFile) {
-      setError("Please upload a file first")
-      return
-    }
-
-    setIsAnalyzing(true)
-    setError(null)
-
-    try {
-      // Check backend health first
-      await checkBackendHealth()
-
-      const formData = new FormData()
-      formData.append('file', uploadedFile)
-
-      const response = await fetch('http://127.0.0.1:8000/api/analyze-financial-data', {
-        method: 'POST',
-        body: formData,
-      })
-
-      if (!response.ok) {
-        throw new Error(`Analysis failed: ${response.statusText}`)
+      setTestResults([...tests])
+    } catch (err) {
+      tests[0] = {
+        name: "Health Check",
+        status: 'error',
+        message: err instanceof Error ? err.message : 'Health check failed'
       }
-
-      const result = await response.json()
-      setAnalysisResult(result)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Analysis failed')
-      console.error('Analysis error:', err)
-    } finally {
-      setIsAnalyzing(false)
+      setTestResults([...tests])
     }
-  }
 
-  const testTaxQuery = async () => {
+    // Test 2: Tax Calculation
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/tax-query', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          question: "How can I save tax with 80C investments?",
-          income_details: { annual_income: 1200000, current_investments: 50000 }
-        })
+      const taxResult = await taxApi.calculateTax({
+        annual_income: 1200000,
+        investments_80c: 150000,
+        health_insurance: 25000,
+        home_loan_interest: 200000,
+        hra_claimed: 100000
       })
-      
-      const result = await response.json()
-      console.log('Tax Query Result:', result)
-      setAnalysisResult(result)
+      tests[1] = {
+        name: "Tax Calculation",
+        status: 'success',
+        message: `Tax calculated successfully. Old regime: ₹${taxResult.tax_analysis.old_regime.tax_liability.toLocaleString()}, New regime: ₹${taxResult.tax_analysis.new_regime.tax_liability.toLocaleString()}`,
+        data: taxResult
+      }
+      setTestResults([...tests])
     } catch (err) {
-      setError('Tax query test failed')
-      console.error(err)
+      tests[1] = {
+        name: "Tax Calculation",
+        status: 'error',
+        message: err instanceof Error ? err.message : 'Tax calculation failed'
+      }
+      setTestResults([...tests])
     }
-  }
 
-  const testCibilAnalysis = async () => {
+    // Test 3: Tax Optimization
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/cibil-analysis', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          credit_data: {
-            current_score: 750,
-            credit_cards: 3,
-            loans: 1,
-            payment_history: "good"
+      const optimizationResult = await taxApi.optimizeTax({
+        age: 32,
+        annual_income: 1200000,
+        existing_investments: {
+          elss: 50000,
+          ppf: 100000,
+          nps: 25000
+        },
+        risk_appetite: "moderate",
+        family_size: 3,
+        city_tier: "metro"
+      })
+      tests[2] = {
+        name: "Tax Optimization",
+        status: 'success',
+        message: `Optimization completed. Potential savings: ₹${optimizationResult.optimization_strategy.potential_savings.toLocaleString()}`,
+        data: optimizationResult
+      }
+      setTestResults([...tests])
+    } catch (err) {
+      tests[2] = {
+        name: "Tax Optimization",
+        status: 'error',
+        message: err instanceof Error ? err.message : 'Tax optimization failed'
+      }
+      setTestResults([...tests])
+    }
+
+    // Test 4: CIBIL Analysis
+    try {
+      const cibilResult = await cibilApi.analyzeCibil({
+        current_score: 750,
+        payment_history: "good",
+        credit_cards: 3,
+        total_credit_limit: 500000,
+        current_utilization: 25.0,
+        loans: 1,
+        missed_payments: 0,
+        account_age_months: 60,
+        recent_inquiries: 2,
+        age: 30,
+        income: 800000
+      })
+      tests[3] = {
+        name: "CIBIL Analysis",
+        status: 'success',
+        message: `CIBIL analysis completed. Score: ${cibilResult.cibil_analysis.current_score}, Category: ${cibilResult.cibil_analysis.score_category}`,
+        data: cibilResult
+      }
+      setTestResults([...tests])
+    } catch (err) {
+      tests[3] = {
+        name: "CIBIL Analysis",
+        status: 'error',
+        message: err instanceof Error ? err.message : 'CIBIL analysis failed'
+      }
+      setTestResults([...tests])
+    }
+
+    // Test 5: CIBIL Scenarios
+    try {
+      const scenarioResult = await cibilApi.simulateScenarios({
+        scenarios: [
+          {
+            action: "pay_off_credit_card",
+            amount: 100000,
+            description: "Pay off ₹1L credit card debt"
+          },
+          {
+            action: "apply_home_loan",
+            amount: 5000000,
+            description: "Apply for ₹50L home loan"
           }
-        })
+        ]
       })
-      
-      const result = await response.json()
-      console.log('CIBIL Analysis Result:', result)
-      setAnalysisResult(result)
+      tests[4] = {
+        name: "CIBIL Scenarios",
+        status: 'success',
+        message: `Scenario simulation completed. Best strategy: ${scenarioResult.best_strategy}`,
+        data: scenarioResult
+      }
+      setTestResults([...tests])
     } catch (err) {
-      setError('CIBIL analysis test failed')
-      console.error(err)
+      tests[4] = {
+        name: "CIBIL Scenarios",
+        status: 'error',
+        message: err instanceof Error ? err.message : 'CIBIL scenario simulation failed'
+      }
+      setTestResults([...tests])
+    }
+
+    // Test 6: Document Analysis (using sample data)
+    try {
+      // Create a sample CSV file for testing
+      const sampleCSV = "Date,Description,Amount,Category\n2024-01-01,SALARY CREDIT,75000,Income\n2024-01-02,RENT PAYMENT,25000,Expense"
+      const blob = new Blob([sampleCSV], { type: 'text/csv' })
+      const file = new File([blob], 'sample_statement.csv', { type: 'text/csv' })
+      
+      const docResult = await documentApi.analyzeFinancialData(file)
+      tests[5] = {
+        name: "Document Analysis",
+        status: 'success',
+        message: `Document analysis completed. Type: ${docResult.document_analysis.document_type}, Confidence: ${(docResult.document_analysis.confidence_level * 100).toFixed(1)}%`,
+        data: docResult
+      }
+      setTestResults([...tests])
+    } catch (err) {
+      tests[5] = {
+        name: "Document Analysis",
+        status: 'error',
+        message: err instanceof Error ? err.message : 'Document analysis failed'
+      }
+      setTestResults([...tests])
+    }
+
+    setIsRunning(false)
+    
+    const successCount = tests.filter(t => t.status === 'success').length
+    const errorCount = tests.filter(t => t.status === 'error').length
+    
+    if (errorCount === 0) {
+      success(`All ${successCount} tests passed successfully!`)
+    } else {
+      showError(`${errorCount} tests failed`, `${successCount} passed, ${errorCount} failed`)
+    }
+  }
+
+  const getStatusIcon = (status: TestResult['status']) => {
+    switch (status) {
+      case 'pending':
+        return <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+      case 'success':
+        return <CheckCircle className="h-4 w-4 text-green-500" />
+      case 'error':
+        return <XCircle className="h-4 w-4 text-red-500" />
+    }
+  }
+
+  const getStatusBadge = (status: TestResult['status']) => {
+    switch (status) {
+      case 'pending':
+        return <Badge variant="secondary">Running</Badge>
+      case 'success':
+        return <Badge className="bg-green-100 text-green-800">Success</Badge>
+      case 'error':
+        return <Badge className="bg-red-100 text-red-800">Error</Badge>
     }
   }
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-6">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-500 text-white">
-                <TestTube className="h-5 w-5" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold">AI Agents Testing Lab</h1>
-                <p className="text-muted-foreground">Test and debug your TaxWise AI agents</p>
-              </div>
-            </div>
-            
+      <div className="container mx-auto px-4 py-8">
+        <div className="space-y-8">
+          {/* Header */}
+          <div className="space-y-2">
             <div className="flex items-center space-x-2">
-              <Badge variant={
-                backendStatus === 'connected' ? 'default' : 
-                backendStatus === 'disconnected' ? 'destructive' : 'secondary'
-              }>
-                Backend: {backendStatus}
-              </Badge>
-              <Button variant="outline" size="sm" onClick={checkBackendHealth}>
-                Check Connection
-              </Button>
+              <Bot className="h-6 w-6 text-primary" />
+              <h1 className="text-3xl font-bold text-balance">AI Agents Test Suite</h1>
             </div>
+            <p className="text-muted-foreground text-pretty">
+              Test all AI agents and API endpoints to ensure proper integration
+            </p>
           </div>
-        </div>
 
-        <Tabs defaultValue="file-upload" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="file-upload">File Analysis</TabsTrigger>
-            <TabsTrigger value="tax-agent">Tax Agent</TabsTrigger>
-            <TabsTrigger value="cibil-agent">CIBIL Agent</TabsTrigger>
-            <TabsTrigger value="results">Test Results</TabsTrigger>
-          </TabsList>
-
-          {/* File Upload Test */}
-          <TabsContent value="file-upload" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Upload className="h-5 w-5" />
-                  <span>Test File Analysis Agent</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div
-                  {...getRootProps()}
-                  className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-                    isDragActive
-                      ? 'border-primary bg-primary/5'
-                      : 'border-muted-foreground/25 hover:border-primary/50'
-                  }`}
+          {/* Test Controls */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Calculator className="h-5 w-5" />
+                <span>Test Controls</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center space-x-4">
+                <Button 
+                  onClick={runAllTests} 
+                  disabled={isRunning}
+                  className="bg-primary hover:bg-primary/90"
                 >
-                  <input {...getInputProps()} />
-                  <div className="space-y-4">
-                    <div className="flex justify-center">
-                      <div className="p-3 bg-primary/10 rounded-full">
-                        <FileText className="h-8 w-8 text-primary" />
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-lg font-medium">
-                        {isDragActive ? 'Drop your file here' : 'Upload test financial data'}
-                      </p>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        CSV, Excel files for agent testing
-                      </p>
-                    </div>
-                    {uploadedFile && (
-                      <div className="flex items-center justify-center space-x-2 text-sm">
-                        <CheckCircle className="h-4 w-4 text-green-600" />
-                        <span className="font-medium">{uploadedFile.name}</span>
-                        <Badge variant="secondary">{(uploadedFile.size / 1024 / 1024).toFixed(2)} MB</Badge>
-                      </div>
-                    )}
-                  </div>
+                  {isRunning ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Running Tests...
+                    </>
+                  ) : (
+                    <>
+                      <Bot className="h-4 w-4 mr-2" />
+                      Run All Tests
+                    </>
+                  )}
+                </Button>
+                <div className="text-sm text-muted-foreground">
+                  {testResults.length > 0 && (
+                    <>
+                      {testResults.filter(t => t.status === 'success').length} passed, {' '}
+                      {testResults.filter(t => t.status === 'error').length} failed
+                    </>
+                  )}
                 </div>
+              </div>
+            </CardContent>
+          </Card>
 
-                <div className="mt-6 flex justify-center">
-                  <Button
-                    onClick={handleAnalysis}
-                    disabled={!uploadedFile || isAnalyzing}
-                    size="lg"
-                    className="px-8"
-                  >
-                    {isAnalyzing ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                        Testing Agents...
-                      </>
-                    ) : (
-                      <>
-                        <Bot className="h-4 w-4 mr-2" />
-                        Run Analysis Test
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Tax Agent Test */}
-          <TabsContent value="tax-agent" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Calculator className="h-5 w-5" />
-                  <span>Test Tax Optimization Agent</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4">
-                  <div className="p-4 border rounded-lg">
-                    <h4 className="font-medium mb-2">Sample Tax Query</h4>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      "How can I save tax with 80C investments?"
-                    </p>
-                    <div className="flex space-x-2">
-                      <Button onClick={testTaxQuery} variant="outline">
-                        <Bot className="h-4 w-4 mr-2" />
-                        Test Tax Agent
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* CIBIL Agent Test */}
-          <TabsContent value="cibil-agent" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <TrendingUp className="h-5 w-5" />
-                  <span>Test CIBIL Analysis Agent</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4">
-                  <div className="p-4 border rounded-lg">
-                    <h4 className="font-medium mb-2">Sample Credit Profile</h4>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Score: 750, Cards: 3, Loans: 1, History: Good
-                    </p>
-                    <div className="flex space-x-2">
-                      <Button onClick={testCibilAnalysis} variant="outline">
-                        <Bot className="h-4 w-4 mr-2" />
-                        Test CIBIL Agent
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Results Tab */}
-          <TabsContent value="results" className="space-y-6">
-            {error && (
-              <Card className="border-destructive">
-                <CardContent className="pt-6">
-                  <div className="flex items-center space-x-2 text-destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <span className="font-medium">Test Error</span>
-                  </div>
-                  <p className="text-sm mt-2">{error}</p>
+          {/* Test Results */}
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">Test Results</h2>
+            {testResults.length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center text-muted-foreground">
+                  Click "Run All Tests" to start testing the AI agents
                 </CardContent>
               </Card>
-            )}
-
-            {analysisResult && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <CheckCircle className="h-5 w-5 text-green-600" />
-                    <span>Agent Test Results</span>
-                    <Badge variant={analysisResult.status === 'success' ? 'default' : 'destructive'}>
-                      {analysisResult.status}
-                    </Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <p className="text-sm">{analysisResult.message}</p>
-                    
-                    {analysisResult.results?.summary && (
-                      <div className="grid gap-4 md:grid-cols-2">
-                        <div className="p-4 bg-green-50 dark:bg-green-950/20 rounded-lg">
-                          <h4 className="font-medium mb-2">Health Score</h4>
-                          <p className="text-2xl font-bold text-green-600">
-                            {analysisResult.results.summary.financial_health_score}/10
-                          </p>
+            ) : (
+              <div className="grid gap-4">
+                {testResults.map((test, index) => (
+                  <Card key={index} className="hover:shadow-md transition-shadow">
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          {getStatusIcon(test.status)}
+                          <div>
+                            <h3 className="font-semibold">{test.name}</h3>
+                            <p className="text-sm text-muted-foreground">{test.message}</p>
+                          </div>
                         </div>
-                        
-                        <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
-                          <h4 className="font-medium mb-2">Recommendations</h4>
-                          <ul className="text-sm space-y-1">
-                            {analysisResult.results.summary.top_recommendations.map((rec, index) => (
-                              <li key={index} className="flex items-center space-x-2">
-                                <div className="h-1.5 w-1.5 bg-blue-600 rounded-full" />
-                                <span>{rec}</span>
-                              </li>
-                            ))}
-                          </ul>
+                        <div className="flex items-center space-x-2">
+                          {getStatusBadge(test.status)}
                         </div>
                       </div>
-                    )}
-
-                    <div className="mt-4 p-3 bg-muted/50 rounded-lg">
-                      <details>
-                        <summary className="cursor-pointer font-medium text-sm">View Raw Agent Response</summary>
-                        <pre className="text-xs mt-2 whitespace-pre-wrap break-all max-h-96 overflow-y-auto">
-                          {JSON.stringify(analysisResult, null, 2)}
-                        </pre>
-                      </details>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                      
+                      {test.data && (
+                        <div className="mt-4 p-4 bg-muted/30 rounded-lg">
+                          <details className="text-sm">
+                            <summary className="cursor-pointer font-medium">View Response Data</summary>
+                            <pre className="mt-2 overflow-auto text-xs">
+                              {JSON.stringify(test.data, null, 2)}
+                            </pre>
+                          </details>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             )}
+          </div>
 
-            {!analysisResult && !error && (
-              <Card>
-                <CardContent className="pt-6 text-center">
-                  <Bot className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-muted-foreground">No test results yet. Run a test from the tabs above.</p>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-        </Tabs>
+          {/* API Endpoints Info */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <FileText className="h-5 w-5" />
+                <span>Available API Endpoints</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <h4 className="font-semibold mb-2 flex items-center">
+                    <Calculator className="h-4 w-4 mr-2" />
+                    Tax APIs
+                  </h4>
+                  <ul className="space-y-1 text-sm text-muted-foreground">
+                    <li>• POST /api/calculate-tax</li>
+                    <li>• POST /api/optimize-tax</li>
+                    <li>• POST /api/tax-query</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-2 flex items-center">
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    CIBIL APIs
+                  </h4>
+                  <ul className="space-y-1 text-sm text-muted-foreground">
+                    <li>• POST /api/analyze-cibil</li>
+                    <li>• POST /api/cibil-scenarios</li>
+                    <li>• POST /api/cibil-report</li>
+                    <li>• GET /api/cibil-sample-data</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-2 flex items-center">
+                    <FileText className="h-4 w-4 mr-2" />
+                    Document APIs
+                  </h4>
+                  <ul className="space-y-1 text-sm text-muted-foreground">
+                    <li>• POST /api/analyze-financial-data</li>
+                    <li>• POST /api/test-data-ingestion</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-2 flex items-center">
+                    <Bot className="h-4 w-4 mr-2" />
+                    Health APIs
+                  </h4>
+                  <ul className="space-y-1 text-sm text-muted-foreground">
+                    <li>• GET /api/health</li>
+                    <li>• GET /api/test-agents</li>
+                  </ul>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   )
