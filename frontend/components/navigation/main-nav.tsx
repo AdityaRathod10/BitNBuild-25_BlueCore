@@ -32,6 +32,11 @@ const mainNavItems = [
     icon: LayoutDashboard,
   },
   {
+    title: "Documents",
+    href: "/documents",
+    icon: FileText,
+  },
+  {
     title: "Investments",
     href: "/investments",
     icon: TrendingUp,

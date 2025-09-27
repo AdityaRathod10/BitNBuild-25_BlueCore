@@ -22,3 +22,6 @@ Agent initialization error: GroqAPIAgent() takes no arguments
 Agent initialization error: GroqAPIAgent() takes no arguments
 ❌ Failed to initialize CIBIL Agent: GroqAPIAgent() takes no arguments
 ❌ Failed to initialize Data Ingestion Agent: GroqAPIAgent() takes no arguments
+Agent initialization error: GroqAPIAgent() takes no arguments
+❌ Failed to initialize CIBIL Agent: GroqAPIAgent() takes no arguments
+❌ Failed to initialize Data Ingestion Agent: GroqAPIAgent() takes no arguments

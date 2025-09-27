@@ -1017,8 +1017,242 @@ export const cibilApi = {
   }
 }
 
-// Document Analysis API
+// Document Management Types
+export interface DocumentUploadRequest {
+  fileName: string
+  fileType: string
+  fileSize: number
+  mimeType: string
+  fileData: string // Base64 encoded
+}
+
+export interface DocumentUploadResponse {
+  success: boolean
+  data: {
+    id: string
+    fileName: string
+    fileType: string
+    fileSize: number
+    documentType: string
+    uploadDate: string
+  }
+  message: string
+}
+
+export interface DocumentAnalysisRequest {
+  documentId: string
+  analysisType: 'tax_analysis' | 'cibil_analysis' | 'general'
+}
+
+export interface DocumentAnalysisResponse {
+  success: boolean
+  data: {
+    analysisId: string
+    documentId: string
+    analysisType: string
+    confidenceLevel: number
+    recommendations: string[]
+    processingTime: number
+    analysisResult: any
+  }
+  message: string
+}
+
+export interface DocumentListResponse {
+  success: boolean
+  data: {
+    documents: Array<{
+      id: string
+      fileName: string
+      fileType: string
+      fileSize: number
+      mimeType: string
+      documentType: string
+      isProcessed: boolean
+      confidenceLevel: number | null
+      taxAnalysisReady: boolean
+      cibilAnalysisReady: boolean
+      uploadDate: string
+      processedDate: string | null
+      analyses: Array<{
+        id: string
+        analysisType: string
+        confidenceLevel: number
+        analysisDate: string
+        processingTime: number | null
+      }>
+    }>
+    pagination: {
+      page: number
+      limit: number
+      totalCount: number
+      totalPages: number
+      hasNext: boolean
+      hasPrev: boolean
+    }
+  }
+}
+
+// Document Management API
 export const documentApi = {
+  // Upload document
+  uploadDocument: async (file: File): Promise<DocumentUploadResponse> => {
+    const base64 = await fileToBase64(file)
+    const token = getAuthToken()
+    
+    const response = await fetch('/api/documents/ingest', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+      },
+      body: JSON.stringify({
+        fileName: file.name,
+        fileType: file.name.split('.').pop()?.toLowerCase() || 'unknown',
+        fileSize: file.size,
+        mimeType: file.type,
+        fileData: base64
+      })
+    })
+    
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Document upload failed')
+    }
+    
+    return response.json()
+  },
+
+  // Analyze document
+  analyzeDocument: async (documentId: string, analysisType: 'tax_analysis' | 'cibil_analysis' | 'general' = 'general'): Promise<DocumentAnalysisResponse> => {
+    const token = getAuthToken()
+    
+    const response = await fetch('/api/documents/analyze', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+      },
+      body: JSON.stringify({
+        documentId,
+        analysisType
+      })
+    })
+    
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Document analysis failed')
+    }
+    
+    return response.json()
+  },
+
+  // Get documents list
+  getDocuments: async (params?: {
+    page?: number
+    limit?: number
+    type?: string
+    processed?: boolean
+  }): Promise<DocumentListResponse> => {
+    const searchParams = new URLSearchParams()
+    const token = getAuthToken()
+    
+    if (params?.page) searchParams.set('page', params.page.toString())
+    if (params?.limit) searchParams.set('limit', params.limit.toString())
+    if (params?.type) searchParams.set('type', params.type)
+    if (params?.processed !== undefined) searchParams.set('processed', params.processed.toString())
+    
+    const response = await fetch(`/api/documents?${searchParams.toString()}`, {
+      headers: {
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+      },
+    })
+    
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Failed to fetch documents')
+    }
+    
+    return response.json()
+  },
+
+  // Get specific document
+  getDocument: async (documentId: string) => {
+    const token = getAuthToken()
+    
+    const response = await fetch(`/api/documents/${documentId}`, {
+      headers: {
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+      },
+    })
+    
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Failed to fetch document')
+    }
+    
+    return response.json()
+  },
+
+  // Delete document
+  deleteDocument: async (documentId: string) => {
+    const token = getAuthToken()
+    
+    const response = await fetch(`/api/documents?id=${documentId}`, {
+      method: 'DELETE',
+      headers: {
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+      },
+    })
+    
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Failed to delete document')
+    }
+    
+    return response.json()
+  },
+
+  // Get extracted financial data for a document
+  getExtractedData: async (documentId: string) => {
+    const token = getAuthToken()
+    
+    const response = await fetch(`/api/documents/${documentId}/extracted-data`, {
+      headers: {
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+      },
+    })
+    
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Failed to fetch extracted data')
+    }
+    
+    return response.json()
+  },
+
+  // Populate tax inputs from document analysis
+  populateTaxInputsFromDocument: async (documentId: string, overwrite: boolean = false) => {
+    const token = getAuthToken()
+    
+    const response = await fetch('/api/user/tax-inputs/from-document', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+      },
+      body: JSON.stringify({ documentId, overwrite })
+    })
+    
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Failed to populate tax inputs from document')
+    }
+    
+    return response.json()
+  },
+
+  // Legacy backend API calls (for backward compatibility)
   analyzeFinancialData: async (file: File): Promise<DocumentAnalysisResponse> => {
     const formData = new FormData()
     formData.append('file', file)
@@ -1052,6 +1286,21 @@ export const documentApi = {
     
     return response.json()
   }
+}
+
+// Helper function to convert file to base64
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.readAsDataURL(file)
+    reader.onload = () => {
+      const result = reader.result as string
+      // Remove data:type/subtype;base64, prefix
+      const base64 = result.split(',')[1]
+      resolve(base64)
+    }
+    reader.onerror = error => reject(error)
+  })
 }
 
 // Health Check API

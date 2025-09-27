@@ -244,7 +244,7 @@ Be precise with number extraction and DO NOT make period assumptions.
             
             logger.info(f"✅ Document processing completed: {filename}")
             
-            return {
+            final_result = {
                 "status": "success",
                 "timestamp": datetime.now().isoformat(),
                 "document_info": {
@@ -257,6 +257,13 @@ Be precise with number extraction and DO NOT make period assumptions.
                 **formatted_result,
                 "response_source": "Real AI Data Ingestion" if self.agent else "Fallback Data Ingestion"
             }
+            
+            print(f"🔍 Final result keys: {list(final_result.keys())}")
+            print(f"🔍 Financial summary: {final_result.get('financial_summary', 'Not found')}")
+            print(f"🔍 Tax agent format: {final_result.get('tax_agent_format', 'Not found')}")
+            print(f"🔍 CIBIL agent format: {final_result.get('cibil_agent_format', 'Not found')}")
+            
+            return final_result
                 
         except Exception as e:
             logger.error(f"❌ Document processing failed: {str(e)}")
@@ -537,9 +544,12 @@ Be precise with number extraction and DO NOT make period assumptions.
             ai_response = self.agent.run(prompt)
             
             print(f"✅ AI analysis completed - {len(ai_response)} characters")
+            print(f"🔍 AI Response: {ai_response[:200]}...")  # Log first 200 chars
             
             # Parse AI response to extract structured data
             structured_data = self._parse_ai_response(ai_response)
+            
+            print(f"🔍 Structured data: {structured_data}")
             
             return structured_data
             
