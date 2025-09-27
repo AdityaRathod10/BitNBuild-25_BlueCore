@@ -2,34 +2,66 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Zap, Eye, EyeOff, Mail, Lock, ArrowRight } from "lucide-react"
+import { authApi } from "@/lib/api"
+import { useAuth } from "@/contexts/AuthContext"
+import { useToast } from "@/hooks/use-toast"
+import { ToastContainer } from "@/components/ui/toast"
+import { AuthGuard } from "@/components/AuthGuard"
 
 export default function LoginPage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const { login } = useAuth()
+  const { success, error, toasts, removeToast } = useToast()
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
 
+  // Get redirect URL from query params, default to profile if no specific redirect
+  const redirectTo = searchParams.get('redirect') || '/profile'
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    // Simulate login process
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    setIsLoading(false)
-    // Redirect to dashboard
-    window.location.href = "/dashboard"
+    
+    try {
+      const response = await authApi.login({
+        email,
+        password,
+      })
+
+      // Store user data and token
+      login(response.user, response.token)
+      
+      success("Login successful!", `Welcome back, ${response.user.firstName}`)
+      
+      // Redirect to intended page
+      setTimeout(() => {
+        router.push(redirectTo)
+      }, 500)
+      
+    } catch (err) {
+      error("Login failed", err instanceof Error ? err.message : "Something went wrong")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted/20 p-4">
-      <div className="w-full max-w-md space-y-6">
+    <AuthGuard requireAuth={false}>
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted/20 p-4">
+        <div className="w-full max-w-md space-y-6">
         {/* Logo */}
         <div className="flex justify-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg">
@@ -114,7 +146,8 @@ export default function LoginPage() {
             </div>
           </CardFooter>
         </Card>
+        </div>
       </div>
-    </div>
+    </AuthGuard>
   )
 }

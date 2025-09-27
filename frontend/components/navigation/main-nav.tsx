@@ -1,8 +1,9 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { useState } from "react"
+import { useAuth } from "@/contexts/AuthContext"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
@@ -16,7 +17,6 @@ import {
   Shield,
   FileText,
   Bot,
-  Bell,
   User,
   Database,
   HelpCircle,
@@ -80,6 +80,11 @@ const userMenuItems = [
     icon: Database,
   },
   {
+    title: "API Documentation",
+    href: "/api-docs",
+    icon: FileText,
+  },
+  {
     title: "Help",
     href: "/help",
     icon: HelpCircle,
@@ -88,7 +93,18 @@ const userMenuItems = [
 
 export function MainNav() {
   const pathname = usePathname()
+  const router = useRouter()
+  const { logout, isAuthenticated } = useAuth()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+
+  const handleLogout = () => {
+    logout()
+    router.push('/auth/login')
+    setIsMobileMenuOpen(false)
+  }
+
+  // Check if we're on the landing page
+  const isLandingPage = pathname === '/'
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
@@ -107,80 +123,96 @@ export function MainNav() {
         </div>
 
         {/* Desktop Navigation - Centered */}
-        <nav className="hidden lg:flex items-center space-x-0.5" role="navigation" aria-label="Main navigation">
-          {mainNavItems.map((item) => {
-            const Icon = item.icon
-            const isActive = pathname === item.href
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={isActive ? "page" : undefined}
-                className={cn(
-                  "group flex items-center space-x-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200",
-                  "hover:bg-accent/50 hover:text-accent-foreground hover:shadow-sm",
-                  "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-                  isActive 
-                    ? "bg-accent text-accent-foreground shadow-sm" 
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <Icon className={cn(
-                  "h-4 w-4 transition-transform duration-200",
-                  "group-hover:scale-110",
-                  isActive && "text-primary"
-                )} />
-                <span className="relative">
-                  {item.title}
-                  {isActive && (
-                    <span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-primary rounded-full" />
+        {!isLandingPage && (
+          <nav className="hidden lg:flex items-center space-x-0.5" role="navigation" aria-label="Main navigation">
+            {mainNavItems.map((item) => {
+              const Icon = item.icon
+              const isActive = pathname === item.href
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={isActive ? "page" : undefined}
+                  className={cn(
+                    "group flex items-center space-x-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200",
+                    "hover:bg-accent/50 hover:text-accent-foreground hover:shadow-sm",
+                    "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+                    isActive 
+                      ? "bg-accent text-accent-foreground shadow-sm" 
+                      : "text-muted-foreground hover:text-foreground"
                   )}
-                </span>
-              </Link>
-            )
-          })}
-
-        </nav>
+                >
+                  <Icon className={cn(
+                    "h-4 w-4 transition-transform duration-200",
+                    "group-hover:scale-110",
+                    isActive && "text-primary"
+                  )} />
+                  <span className="relative">
+                    {item.title}
+                    {isActive && (
+                      <span className="absolute -bottom-1 left-0 right-0 h-0.5 bg-primary rounded-full" />
+                    )}
+                  </span>
+                </Link>
+              )
+            })}
+          </nav>
+        )}
 
         {/* Right Side Actions */}
         <div className="flex items-center space-x-2">
-          {/* AI Co-Pilot */}
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded-lg px-2 py-2 transition-all duration-200 group" 
-            asChild
-          >
-            <Link href="/ai-copilot" aria-label="Open AI Co-Pilot">
-              <Bot className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
-              <span className="hidden lg:ml-1.5 lg:inline font-medium text-xs">AI Co-Pilot</span>
-            </Link>
-          </Button>
+          {isLandingPage ? (
+            // Landing page actions
+            <>
+              <Link href="/auth/login">
+                <Button variant="ghost">Sign In</Button>
+              </Link>
+              <Link href="/auth/signup">
+                <Button>Get Started</Button>
+              </Link>
+            </>
+          ) : (
+            // App navigation actions
+            <>
+              {/* AI Co-Pilot */}
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded-lg px-2 py-2 transition-all duration-200 group" 
+                asChild
+              >
+                <Link href="/ai-copilot" aria-label="Open AI Co-Pilot">
+                  <Bot className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
+                  <span className="hidden lg:ml-1.5 lg:inline font-medium text-xs">AI Co-Pilot</span>
+                </Link>
+              </Button>
 
-          {/* Notifications */}
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded-lg p-2 transition-all duration-200 group relative" 
-            asChild
-          >
-            <Link href="/notifications" aria-label="View notifications">
-              <Bell className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
-              <span className="absolute -top-1 -right-1 h-3 w-3 bg-destructive rounded-full animate-pulse" aria-label="New notification" />
-            </Link>
-          </Button>
+              {/* Profile Link */}
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded-lg px-2 py-2 transition-all duration-200 group" 
+                asChild
+              >
+                <Link href="/profile" aria-label="Profile Settings">
+                  <User className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
+                </Link>
+              </Button>
 
-          {/* Profile Link */}
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded-lg px-2 py-2 transition-all duration-200 group" 
-            asChild
-          >
-            <Link href="/profile" aria-label="Profile Settings">
-              <User className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
-            </Link>
-          </Button>
+              {/* Logout Button - Only show when authenticated */}
+              {isAuthenticated && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={handleLogout}
+                  className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg px-2 py-2 transition-all duration-200 group" 
+                  aria-label="Logout"
+                >
+                  <LogOut className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
+                </Button>
+              )}
+            </>
+          )}
 
           {/* Mobile Menu */}
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
@@ -208,81 +240,110 @@ export function MainNav() {
                 </div>
 
                 {/* Mobile Navigation Items */}
-                <nav className="flex flex-col space-y-2" role="navigation" aria-label="Mobile navigation">
-                  {mainNavItems.map((item) => {
-                    const Icon = item.icon
-                    const isActive = pathname === item.href
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        aria-current={isActive ? "page" : undefined}
-                        className={cn(
-                          "flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200",
-                          "hover:bg-accent/50 hover:text-accent-foreground",
-                          isActive 
-                            ? "bg-accent text-accent-foreground" 
-                            : "text-muted-foreground"
-                        )}
-                      >
-                        <Icon className="h-5 w-5" />
-                        <span>{item.title}</span>
-                      </Link>
-                    )
-                  })}
-                </nav>
+                {!isLandingPage && (
+                  <nav className="flex flex-col space-y-2" role="navigation" aria-label="Mobile navigation">
+                    {mainNavItems.map((item) => {
+                      const Icon = item.icon
+                      const isActive = pathname === item.href
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          aria-current={isActive ? "page" : undefined}
+                          className={cn(
+                            "flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200",
+                            "hover:bg-accent/50 hover:text-accent-foreground",
+                            isActive 
+                              ? "bg-accent text-accent-foreground" 
+                              : "text-muted-foreground"
+                          )}
+                        >
+                          <Icon className="h-5 w-5" />
+                          <span>{item.title}</span>
+                        </Link>
+                      )
+                    })}
+                  </nav>
+                )}
 
                 {/* Mobile User Actions */}
                 <div className="pt-4 border-t border-border/50">
                   <div className="flex flex-col space-y-2">
-                    <Link
-                      href="/ai-copilot"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"
-                    >
-                      <Bot className="h-5 w-5" />
-                      <span>AI Co-Pilot</span>
-                    </Link>
-                    <Link
-                      href="/notifications"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"
-                    >
-                      <Bell className="h-5 w-5" />
-                      <span>Notifications</span>
-                    </Link>
-                    <Link
-                      href="/profile"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"
-                    >
-                      <User className="h-5 w-5" />
-                      <span>Profile Settings</span>
-                    </Link>
-                    <Link
-                      href="/accounts"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"
-                    >
-                      <Database className="h-5 w-5" />
-                      <span>Data & Accounts</span>
-                    </Link>
-                    <Link
-                      href="/help"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"
-                    >
-                      <HelpCircle className="h-5 w-5" />
-                      <span>Help</span>
-                    </Link>
-                    <button
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 text-destructive hover:bg-destructive/10"
-                    >
-                      <LogOut className="h-5 w-5" />
-                      <span>Logout</span>
-                    </button>
+                    {isLandingPage ? (
+                      // Landing page mobile actions
+                      <>
+                        <Link
+                          href="/auth/login"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"
+                        >
+                          <User className="h-5 w-5" />
+                          <span>Sign In</span>
+                        </Link>
+                        <Link
+                          href="/auth/signup"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 text-primary-foreground bg-primary hover:bg-primary/90"
+                        >
+                          <Zap className="h-5 w-5" />
+                          <span>Get Started</span>
+                        </Link>
+                      </>
+                    ) : (
+                      // App mobile actions
+                      <>
+                        <Link
+                          href="/ai-copilot"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"
+                        >
+                          <Bot className="h-5 w-5" />
+                          <span>AI Co-Pilot</span>
+                        </Link>
+                        <Link
+                          href="/profile"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"
+                        >
+                          <User className="h-5 w-5" />
+                          <span>Profile Settings</span>
+                        </Link>
+                        <Link
+                          href="/accounts"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"
+                        >
+                          <Database className="h-5 w-5" />
+                          <span>Data & Accounts</span>
+                        </Link>
+                        <Link
+                          href="/api-docs"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"
+                        >
+                          <FileText className="h-5 w-5" />
+                          <span>API Documentation</span>
+                        </Link>
+                        <Link
+                          href="/help"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"
+                        >
+                          <HelpCircle className="h-5 w-5" />
+                          <span>Help</span>
+                        </Link>
+                        {isAuthenticated && (
+                          <button
+                            onClick={handleLogout}
+                            className="flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 text-destructive hover:bg-destructive/10"
+                          >
+                            <LogOut className="h-5 w-5" />
+                            <span>Logout</span>
+                          </button>
+                        )}
+                      </>
+                    )}
                   </div>
                 </div>
               </div>

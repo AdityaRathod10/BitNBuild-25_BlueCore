@@ -1,18 +1,21 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
+import { useAuth } from "@/contexts/AuthContext"
+import { userApi } from "@/lib/api"
+import { useToast } from "@/hooks/use-toast"
+import { ToastContainer } from "@/components/ui/toast"
+import { AuthGuard } from "@/components/AuthGuard"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Switch } from "@/components/ui/switch"
-import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Textarea } from "@/components/ui/textarea"
-import { Mail, Phone, Shield, Eye, EyeOff, Camera, Save, Edit, Trash2, Plus, Database, HelpCircle, LogOut, Settings } from "lucide-react"
+import { Eye, EyeOff, Camera, Save, Edit, Trash2, Plus, X } from "lucide-react"
 
 interface UserProfile {
   personalInfo: {
@@ -25,8 +28,9 @@ interface UserProfile {
     city: string
     state: string
     pincode: string
-    panNumber: string
-    aadharNumber: string
+    panCard: string
+    aadharCard: string
+    profilePhoto: string
   }
   financialInfo: {
     annualIncome: string
@@ -41,109 +45,313 @@ interface UserProfile {
     timezone: string
     theme: string
   }
-  security: {
-    twoFactorEnabled: boolean
-    emailNotifications: boolean
-    smsAlerts: boolean
-    loginAlerts: boolean
-  }
 }
 
-const initialProfile: UserProfile = {
-  personalInfo: {
-    firstName: "Rajesh",
-    lastName: "Kumar",
-    email: "rajesh.kumar@email.com",
-    phone: "+91 98765 43210",
-    dateOfBirth: "1985-06-15",
-    address: "123, MG Road, Koramangala",
-    city: "Bangalore",
-    state: "Karnataka",
-    pincode: "560034",
-    panNumber: "ABCDE1234F",
-    aadharNumber: "1234 5678 9012",
-  },
-  financialInfo: {
-    annualIncome: "1200000",
-    riskTolerance: "moderate",
-    investmentExperience: "intermediate",
-    financialGoals: ["Retirement Planning", "Tax Saving", "Wealth Creation"],
-    taxRegime: "new",
-  },
-  preferences: {
-    currency: "INR",
-    language: "English",
-    timezone: "Asia/Kolkata",
-    theme: "system",
-  },
-  security: {
-    twoFactorEnabled: true,
-    emailNotifications: true,
-    smsAlerts: false,
-    loginAlerts: true,
-  },
-}
 
 export default function ProfilePage() {
-  const [profile, setProfile] = useState<UserProfile>(initialProfile)
+  const { user, updateUser, logout, isAuthenticated } = useAuth()
+  const { success, error, toasts, removeToast } = useToast()
+  const [profile, setProfile] = useState<UserProfile | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [showSensitiveInfo, setShowSensitiveInfo] = useState(false)
   const [activeTab, setActiveTab] = useState("personal")
+  const [isLoading, setIsLoading] = useState(true)
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Debug logs removed - authentication is working
+
+  // Load profile data when authenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setProfile(null)
+      setIsLoading(false)
+      return
+    }
+
+    let isMounted = true
+
+    const loadProfileData = async () => {
+      try {
+        setIsLoading(true)
+        const response = await userApi.getDetailedProfile()
+        if (isMounted) {
+          setProfile(response.data)
+        }
+      } catch (err) {
+        if (isMounted) {
+          error("Failed to load profile", err instanceof Error ? err.message : "Something went wrong")
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    loadProfileData()
+
+    return () => {
+      isMounted = false
+    }
+  }, [isAuthenticated])
 
   const handleInputChange = (section: keyof UserProfile, field: string, value: string | boolean | string[]) => {
+    if (!profile) return
+    
+    // Format Aadhar number with spaces every 4 digits
+    if (field === 'aadharCard' && typeof value === 'string') {
+      // Remove all spaces and non-digits
+      const cleaned = value.replace(/\D/g, '')
+      // Add spaces every 4 digits
+      const formatted = cleaned.replace(/(\d{4})(?=\d)/g, '$1 ')
+      value = formatted
+    }
+    
     setProfile((prev) => ({
-      ...prev,
+      ...prev!,
       [section]: {
-        ...prev[section],
+        ...prev![section],
         [field]: value,
       },
     }))
   }
 
-  const handleSave = () => {
-    // Simulate save operation
-    setIsEditing(false)
-    // In real app, this would make an API call
-    console.log("Profile saved:", profile)
+  const handleSave = async () => {
+    if (!profile) return
+
+    try {
+      setIsEditing(false)
+      
+      // Update basic profile info
+      await userApi.updateProfile({
+        firstName: profile.personalInfo.firstName,
+        lastName: profile.personalInfo.lastName,
+        phone: profile.personalInfo.phone,
+      })
+
+      // Update identity information (PAN and Aadhar)
+      await userApi.updateIdentityInfo({
+        panCard: profile.personalInfo.panCard,
+        aadharCard: profile.personalInfo.aadharCard.replace(/\s/g, ''), // Remove spaces before saving
+      })
+
+      // Update preferences
+      await userApi.updatePreferences(profile.preferences)
+
+      // Update financial information
+      await userApi.updateFinancialInfo({
+        annualIncome: profile.financialInfo.annualIncome,
+        riskTolerance: profile.financialInfo.riskTolerance as 'Conservative' | 'Moderate' | 'Aggressive',
+        investmentExperience: profile.financialInfo.investmentExperience as 'Beginner' | 'Intermediate' | 'Advanced',
+      })
+
+      success("Profile updated successfully!")
+      
+      // Update user context if basic info changed
+      if (user) {
+        updateUser({
+          ...user,
+          firstName: profile.personalInfo.firstName,
+          lastName: profile.personalInfo.lastName,
+          phone: profile.personalInfo.phone,
+        })
+      }
+    } catch (err) {
+      error("Failed to update profile", err instanceof Error ? err.message : "Something went wrong")
+      setIsEditing(true) // Re-enable editing on error
+    }
   }
 
   const maskSensitiveData = (data: string, visibleChars = 4) => {
-    if (!showSensitiveInfo) {
-      return "*".repeat(data.length - visibleChars) + data.slice(-visibleChars)
+    if (!data) return ''
+    if (!showSensitiveInfo && data) {
+      const maskLength = Math.max(0, data.length - visibleChars)
+      return "X".repeat(maskLength) + data.slice(-visibleChars)
     }
     return data
   }
 
+  const handleLogout = () => {
+    logout()
+    success("Logged out successfully!")
+  }
+
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      error("Please select a valid image file")
+      return
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      error("Image size should be less than 5MB")
+      return
+    }
+
+    setIsUploadingPhoto(true)
+    
+    try {
+      // Convert to base64
+      const reader = new FileReader()
+      reader.onload = async (e) => {
+        const result = e.target?.result as string
+        if (result) {
+          // Upload to server
+          await userApi.uploadProfilePhoto(result)
+          
+          // Update local state
+          if (profile) {
+            setProfile(prev => ({
+              ...prev!,
+              personalInfo: {
+                ...prev!.personalInfo,
+                profilePhoto: result
+              }
+            }))
+          }
+          
+          success("Profile photo uploaded successfully!")
+        }
+        setIsUploadingPhoto(false)
+      }
+      reader.onerror = () => {
+        error("Failed to process image")
+        setIsUploadingPhoto(false)
+      }
+      reader.readAsDataURL(file)
+    } catch (err) {
+      error("Failed to upload photo", err instanceof Error ? err.message : "Something went wrong")
+      setIsUploadingPhoto(false)
+    }
+  }
+
+  const handleRemovePhoto = async () => {
+    try {
+      await userApi.removeProfilePhoto()
+      
+      // Update local state
+      if (profile) {
+        setProfile(prev => ({
+          ...prev!,
+          personalInfo: {
+            ...prev!.personalInfo,
+            profilePhoto: ''
+          }
+        }))
+      }
+      
+      success("Profile photo removed")
+    } catch (err) {
+      error("Failed to remove photo", err instanceof Error ? err.message : "Something went wrong")
+    }
+  }
+
+  const handleChangePhotoClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  if (isLoading) {
+    return (
+      <AuthGuard requireAuth={true}>
+        <div className="container mx-auto p-6 max-w-4xl">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+          </div>
+        </div>
+      </AuthGuard>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <AuthGuard requireAuth={true}>
+        <div className="container mx-auto p-6 max-w-4xl">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Please log in</h2>
+            <p className="text-gray-600">You need to be logged in to view your profile.</p>
+          </div>
+        </div>
+      </AuthGuard>
+    )
+  }
+
+  if (!profile) {
+    return (
+      <AuthGuard requireAuth={true}>
+        <div className="container mx-auto p-6 max-w-4xl">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Profile Not Found</h2>
+            <p className="text-gray-600">Unable to load your profile data.</p>
+          </div>
+        </div>
+      </AuthGuard>
+    )
+  }
+
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
+    <AuthGuard requireAuth={true}>
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
+      <div className="container mx-auto p-6 max-w-4xl">
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-4">
-            <Avatar className="h-16 w-16">
-              <AvatarImage src="/placeholder.svg?height=64&width=64" alt="Profile" />
-              <AvatarFallback className="text-lg">
-                {profile.personalInfo.firstName[0]}
-                {profile.personalInfo.lastName[0]}
-              </AvatarFallback>
-            </Avatar>
+            <div className="relative">
+              <Avatar className="h-16 w-16">
+                <AvatarImage 
+                  src={profile.personalInfo.profilePhoto || "/placeholder.svg?height=64&width=64"} 
+                  alt="Profile" 
+                />
+                <AvatarFallback className="text-lg">
+                  {profile.personalInfo.firstName[0]}
+                  {profile.personalInfo.lastName[0]}
+                </AvatarFallback>
+              </Avatar>
+              {isUploadingPhoto && (
+                <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                </div>
+              )}
+            </div>
             <div>
               <h1 className="text-2xl font-bold">
                 {profile.personalInfo.firstName} {profile.personalInfo.lastName}
               </h1>
               <p className="text-muted-foreground">{profile.personalInfo.email}</p>
-              <div className="flex items-center space-x-2 mt-1">
-                <Badge variant="secondary">Premium Member</Badge>
-                <Badge variant="outline" className="text-green-600 border-green-600">
-                  Verified
-                </Badge>
-              </div>
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            <Button variant="outline" size="sm">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handlePhotoUpload}
+              className="hidden"
+            />
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleChangePhotoClick} 
+              disabled={isUploadingPhoto}
+            >
               <Camera className="mr-2 h-4 w-4" />
-              Change Photo
+              {profile.personalInfo.profilePhoto ? "Change Photo" : "Upload Photo"}
             </Button>
+            {profile.personalInfo.profilePhoto && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleRemovePhoto} 
+                disabled={isUploadingPhoto}
+              >
+                <X className="mr-2 h-4 w-4" />
+                Remove
+              </Button>
+            )}
             <Button
               variant={isEditing ? "default" : "outline"}
               size="sm"
@@ -166,12 +374,10 @@ export default function ProfilePage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="personal">Personal Info</TabsTrigger>
           <TabsTrigger value="financial">Financial Info</TabsTrigger>
           <TabsTrigger value="preferences">Preferences</TabsTrigger>
-          <TabsTrigger value="security">Security</TabsTrigger>
-          <TabsTrigger value="account">Account</TabsTrigger>
         </TabsList>
 
         <TabsContent value="personal" className="space-y-6">
@@ -287,21 +493,26 @@ export default function ProfilePage() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="panNumber">PAN Number</Label>
+                  <Label htmlFor="panCard">PAN Number</Label>
                   <Input
-                    id="panNumber"
-                    value={maskSensitiveData(profile.personalInfo.panNumber, 2)}
-                    onChange={(e) => handleInputChange("personalInfo", "panNumber", e.target.value)}
-                    disabled={!isEditing || !showSensitiveInfo}
+                    id="panCard"
+                    value={isEditing || showSensitiveInfo ? (profile.personalInfo.panCard || '') : maskSensitiveData(profile.personalInfo.panCard, 2)}
+                    onChange={(e) => handleInputChange("personalInfo", "panCard", e.target.value)}
+                    disabled={!isEditing}
+                    placeholder={!profile.personalInfo.panCard ? "Enter your PAN number" : ""}
+                    className="font-mono"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="aadharNumber">Aadhar Number</Label>
+                  <Label htmlFor="aadharCard">Aadhar Number</Label>
                   <Input
-                    id="aadharNumber"
-                    value={maskSensitiveData(profile.personalInfo.aadharNumber, 4)}
-                    onChange={(e) => handleInputChange("personalInfo", "aadharNumber", e.target.value)}
-                    disabled={!isEditing || !showSensitiveInfo}
+                    id="aadharCard"
+                    value={isEditing || showSensitiveInfo ? (profile.personalInfo.aadharCard || '') : maskSensitiveData(profile.personalInfo.aadharCard, 4)}
+                    onChange={(e) => handleInputChange("personalInfo", "aadharCard", e.target.value)}
+                    disabled={!isEditing}
+                    placeholder={!profile.personalInfo.aadharCard ? "Enter your Aadhar number" : ""}
+                    className="font-mono"
+                    maxLength={14}
                   />
                 </div>
               </div>
@@ -354,9 +565,9 @@ export default function ProfilePage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="conservative">Conservative</SelectItem>
-                      <SelectItem value="moderate">Moderate</SelectItem>
-                      <SelectItem value="aggressive">Aggressive</SelectItem>
+                      <SelectItem value="Conservative">Conservative</SelectItem>
+                      <SelectItem value="Moderate">Moderate</SelectItem>
+                      <SelectItem value="Aggressive">Aggressive</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -371,9 +582,9 @@ export default function ProfilePage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="beginner">Beginner</SelectItem>
-                      <SelectItem value="intermediate">Intermediate</SelectItem>
-                      <SelectItem value="advanced">Advanced</SelectItem>
+                      <SelectItem value="Beginner">Beginner</SelectItem>
+                      <SelectItem value="Intermediate">Intermediate</SelectItem>
+                      <SelectItem value="Advanced">Advanced</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -493,126 +704,8 @@ export default function ProfilePage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="security" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Security Settings</CardTitle>
-              <CardDescription>Manage your account security and privacy</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Two-Factor Authentication</Label>
-                    <p className="text-sm text-muted-foreground">Add an extra layer of security to your account</p>
-                  </div>
-                  <Switch
-                    checked={profile.security.twoFactorEnabled}
-                    onCheckedChange={(value) => handleInputChange("security", "twoFactorEnabled", value)}
-                  />
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Email Notifications</Label>
-                    <p className="text-sm text-muted-foreground">Receive security alerts via email</p>
-                  </div>
-                  <Switch
-                    checked={profile.security.emailNotifications}
-                    onCheckedChange={(value) => handleInputChange("security", "emailNotifications", value)}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>SMS Alerts</Label>
-                    <p className="text-sm text-muted-foreground">Receive security alerts via SMS</p>
-                  </div>
-                  <Switch
-                    checked={profile.security.smsAlerts}
-                    onCheckedChange={(value) => handleInputChange("security", "smsAlerts", value)}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Login Alerts</Label>
-                    <p className="text-sm text-muted-foreground">Get notified of new login attempts</p>
-                  </div>
-                  <Switch
-                    checked={profile.security.loginAlerts}
-                    onCheckedChange={(value) => handleInputChange("security", "loginAlerts", value)}
-                  />
-                </div>
-              </div>
-              <Separator />
-              <div className="space-y-4">
-                <h4 className="font-medium">Password & Authentication</h4>
-                <div className="space-y-2">
-                  <Button variant="outline" className="w-full justify-start bg-transparent">
-                    <Shield className="mr-2 h-4 w-4" />
-                    Change Password
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start bg-transparent">
-                    <Phone className="mr-2 h-4 w-4" />
-                    Update Phone Number
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start bg-transparent">
-                    <Mail className="mr-2 h-4 w-4" />
-                    Change Email Address
-                  </Button>
-                </div>
-              </div>
-              <Separator />
-              <div className="space-y-4">
-                <h4 className="font-medium text-destructive">Danger Zone</h4>
-                <div className="space-y-2">
-                  <Button variant="destructive" className="w-full justify-start">
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete Account
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="account" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Account Management</CardTitle>
-              <CardDescription>Manage your account settings and data</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <h4 className="font-medium">Account Settings</h4>
-                <div className="space-y-2">
-                  <Button variant="outline" className="w-full justify-start bg-transparent">
-                    <Settings className="mr-2 h-4 w-4" />
-                    Profile Settings
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start bg-transparent">
-                    <Database className="mr-2 h-4 w-4" />
-                    Data & Accounts
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start bg-transparent">
-                    <HelpCircle className="mr-2 h-4 w-4" />
-                    Help & Support
-                  </Button>
-                </div>
-              </div>
-              <Separator />
-              <div className="space-y-2">
-                <h4 className="font-medium text-destructive">Account Actions</h4>
-                <div className="space-y-2">
-                  <Button variant="destructive" className="w-full justify-start">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Sign Out
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
     </div>
+    </AuthGuard>
   )
 }

@@ -26,6 +26,7 @@ import {
   AlertCircle,
 } from "lucide-react"
 import { format } from "date-fns"
+import { AuthGuard } from "@/components/AuthGuard"
 
 // Mock data for reports
 const availableReports = [
@@ -179,7 +180,8 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <AuthGuard requireAuth={true}>
+      <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -473,5 +475,6 @@ export default function ReportsPage() {
         </Tabs>
       </div>
     </div>
+    </AuthGuard>
   )
 }

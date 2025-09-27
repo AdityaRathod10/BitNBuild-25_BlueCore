@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PlusCircle, TrendingUp, AlertTriangle, Target, CreditCard } from "lucide-react"
+import { AuthGuard } from "@/components/AuthGuard"
 
 const budgetCategories = [
   { name: "Food & Dining", budgeted: 15000, spent: 12500, color: "bg-green-500" },
@@ -58,7 +59,8 @@ export default function BudgetingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <AuthGuard requireAuth={true}>
+      <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">Budgeting & Spending</h1>
@@ -323,5 +325,6 @@ export default function BudgetingPage() {
         </Tabs>
       </div>
     </div>
+    </AuthGuard>
   )
 }

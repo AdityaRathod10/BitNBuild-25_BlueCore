@@ -1,7 +1,8 @@
 "use client"
 
 import React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -11,69 +12,61 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 import { Zap, ArrowRight, ArrowLeft, Check, User, Briefcase, Target, Settings, Sparkles } from "lucide-react"
+import { onboardingApi } from "@/lib/api"
+import { useAuth } from "@/contexts/AuthContext"
+import { useToast } from "@/hooks/use-toast"
+import { ToastContainer } from "@/components/ui/toast"
+import { AuthGuard } from "@/components/AuthGuard"
 
-interface OnboardingData {
+interface OnboardingFormData {
   personalInfo: {
-    firstName: string
-    lastName: string
     dateOfBirth: string
-    phone: string
+    gender: string
+    maritalStatus: string
+    address: string
     city: string
-    occupation: string
+    state: string
+    pincode: string
   }
   financialInfo: {
-    annualIncome: string
-    currentSavings: string
-    monthlyExpenses: string
-    hasInvestments: boolean
-    riskTolerance: string
-    investmentExperience: string
+    annualIncome: number
+    monthlyIncome: number
+    occupation: string
+    employer: string
+    workExperience: number
   }
   goals: {
-    primaryGoals: string[]
-    timeHorizon: string
-    targetAmount: string
-    specificGoals: string
-  }
-  preferences: {
-    preferredLanguage: string
-    communicationPreference: string[]
-    advisoryServices: boolean
-    taxPlanningHelp: boolean
+    shortTermGoals: string[]
+    longTermGoals: string[]
+    riskTolerance: 'Conservative' | 'Moderate' | 'Aggressive'
+    investmentExperience: 'Beginner' | 'Intermediate' | 'Advanced'
   }
 }
 
-const initialData: OnboardingData = {
+const initialData: OnboardingFormData = {
   personalInfo: {
-    firstName: "",
-    lastName: "",
     dateOfBirth: "",
-    phone: "",
+    gender: "",
+    maritalStatus: "",
+    address: "",
     city: "",
-    occupation: "",
+    state: "",
+    pincode: "",
   },
   financialInfo: {
-    annualIncome: "",
-    currentSavings: "",
-    monthlyExpenses: "",
-    hasInvestments: false,
-    riskTolerance: "",
-    investmentExperience: "",
+    annualIncome: 0,
+    monthlyIncome: 0,
+    occupation: "",
+    employer: "",
+    workExperience: 0,
   },
   goals: {
-    primaryGoals: [],
-    timeHorizon: "",
-    targetAmount: "",
-    specificGoals: "",
-  },
-  preferences: {
-    preferredLanguage: "",
-    communicationPreference: [],
-    advisoryServices: false,
-    taxPlanningHelp: false,
+    shortTermGoals: [],
+    longTermGoals: [],
+    riskTolerance: 'Moderate',
+    investmentExperience: 'Intermediate',
   },
 }
 
@@ -95,12 +88,6 @@ const steps = [
     title: "Goals & Objectives",
     description: "What do you want to achieve?",
     icon: Target,
-  },
-  {
-    id: 4,
-    title: "Preferences",
-    description: "Customize your experience",
-    icon: Settings,
   },
 ]
 
@@ -127,13 +114,23 @@ const occupations = [
 ]
 
 export default function OnboardingPage() {
+  const router = useRouter()
+  const { isAuthenticated } = useAuth()
+  const { success, error, toasts, removeToast } = useToast()
   const [currentStep, setCurrentStep] = useState(1)
-  const [data, setData] = useState<OnboardingData>(initialData)
+  const [data, setData] = useState<OnboardingFormData>(initialData)
   const [isLoading, setIsLoading] = useState(false)
+
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.push('/auth/login')
+    }
+  }, [isAuthenticated, router])
 
   const progress = (currentStep / steps.length) * 100
 
-  const handleInputChange = (section: keyof OnboardingData, field: string, value: any) => {
+  const handleInputChange = (section: keyof OnboardingFormData, field: string, value: any) => {
     setData((prev) => ({
       ...prev,
       [section]: {
@@ -143,7 +140,7 @@ export default function OnboardingPage() {
     }))
   }
 
-  const handleArrayChange = (section: keyof OnboardingData, field: string, value: string, checked: boolean) => {
+  const handleArrayChange = (section: keyof OnboardingFormData, field: string, value: string, checked: boolean) => {
     setData((prev) => {
       const currentArray = (prev[section] as any)[field] as string[]
       const newArray = checked ? [...currentArray, value] : currentArray.filter((item) => item !== value)
@@ -158,9 +155,15 @@ export default function OnboardingPage() {
     })
   }
 
-  const nextStep = () => {
+  const nextStep = async () => {
     if (currentStep < steps.length) {
-      setCurrentStep(currentStep + 1)
+      // Save current step data before moving to next
+      try {
+        await saveCurrentStepData()
+        setCurrentStep(currentStep + 1)
+      } catch (err) {
+        error("Failed to save data", err instanceof Error ? err.message : "Something went wrong")
+      }
     }
   }
 
@@ -170,46 +173,74 @@ export default function OnboardingPage() {
     }
   }
 
+  const saveCurrentStepData = async () => {
+    switch (currentStep) {
+      case 1:
+        await onboardingApi.savePersonalInfo(data.personalInfo)
+        break
+      case 2:
+        await onboardingApi.saveFinancialInfo(data.financialInfo)
+        break
+      case 3:
+        await onboardingApi.saveFinancialGoals(data.goals)
+        break
+    }
+  }
+
   const handleComplete = async () => {
     setIsLoading(true)
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-    setIsLoading(false)
-    // Redirect to dashboard
-    window.location.href = "/dashboard"
+    
+    try {
+      // Save final step data
+      await saveCurrentStepData()
+      
+      // Complete onboarding
+      await onboardingApi.completeOnboarding()
+      
+      success("Onboarding completed!", "Your profile has been set up successfully")
+      
+      // Redirect to dashboard
+      setTimeout(() => {
+        router.push("/dashboard")
+      }, 1500)
+      
+    } catch (err) {
+      error("Failed to complete onboarding", err instanceof Error ? err.message : "Something went wrong")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const isStepValid = () => {
     switch (currentStep) {
       case 1:
         return (
-          data.personalInfo.firstName &&
-          data.personalInfo.lastName &&
           data.personalInfo.dateOfBirth &&
-          data.personalInfo.phone &&
+          data.personalInfo.gender &&
+          data.personalInfo.maritalStatus &&
           data.personalInfo.city &&
-          data.personalInfo.occupation
+          data.personalInfo.state &&
+          data.personalInfo.pincode
         )
       case 2:
         return (
-          data.financialInfo.annualIncome &&
-          data.financialInfo.currentSavings &&
-          data.financialInfo.monthlyExpenses &&
-          data.financialInfo.riskTolerance &&
-          data.financialInfo.investmentExperience
+          data.financialInfo.annualIncome > 0 &&
+          data.financialInfo.monthlyIncome > 0 &&
+          data.financialInfo.occupation &&
+          data.financialInfo.workExperience >= 0
         )
       case 3:
-        return data.goals.primaryGoals.length > 0 && data.goals.timeHorizon
-      case 4:
-        return data.preferences.preferredLanguage && data.preferences.communicationPreference.length > 0
+        return data.goals.shortTermGoals.length > 0 && data.goals.longTermGoals.length > 0
       default:
         return false
     }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 p-4">
-      <div className="container mx-auto max-w-2xl">
+    <AuthGuard requireAuth={true}>
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 p-4">
+        <div className="container mx-auto max-w-2xl">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
@@ -277,26 +308,6 @@ export default function OnboardingPage() {
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="firstName">First Name *</Label>
-                    <Input
-                      id="firstName"
-                      value={data.personalInfo.firstName}
-                      onChange={(e) => handleInputChange("personalInfo", "firstName", e.target.value)}
-                      placeholder="Enter your first name"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="lastName">Last Name *</Label>
-                    <Input
-                      id="lastName"
-                      value={data.personalInfo.lastName}
-                      onChange={(e) => handleInputChange("personalInfo", "lastName", e.target.value)}
-                      placeholder="Enter your last name"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
                     <Label htmlFor="dateOfBirth">Date of Birth *</Label>
                     <Input
                       id="dateOfBirth"
@@ -306,16 +317,50 @@ export default function OnboardingPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number *</Label>
-                    <Input
-                      id="phone"
-                      value={data.personalInfo.phone}
-                      onChange={(e) => handleInputChange("personalInfo", "phone", e.target.value)}
-                      placeholder="+91 98765 43210"
-                    />
+                    <Label htmlFor="gender">Gender *</Label>
+                    <Select
+                      value={data.personalInfo.gender}
+                      onValueChange={(value) => handleInputChange("personalInfo", "gender", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select gender" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Male">Male</SelectItem>
+                        <SelectItem value="Female">Female</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="maritalStatus">Marital Status *</Label>
+                  <Select
+                    value={data.personalInfo.maritalStatus}
+                    onValueChange={(value) => handleInputChange("personalInfo", "maritalStatus", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select marital status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Single">Single</SelectItem>
+                      <SelectItem value="Married">Married</SelectItem>
+                      <SelectItem value="Divorced">Divorced</SelectItem>
+                      <SelectItem value="Widowed">Widowed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="address">Address *</Label>
+                  <Textarea
+                    id="address"
+                    value={data.personalInfo.address}
+                    onChange={(e) => handleInputChange("personalInfo", "address", e.target.value)}
+                    placeholder="Enter your full address"
+                    rows={2}
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="city">City *</Label>
                     <Input
@@ -326,10 +371,58 @@ export default function OnboardingPage() {
                     />
                   </div>
                   <div className="space-y-2">
+                    <Label htmlFor="state">State *</Label>
+                    <Input
+                      id="state"
+                      value={data.personalInfo.state}
+                      onChange={(e) => handleInputChange("personalInfo", "state", e.target.value)}
+                      placeholder="Enter your state"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="pincode">Pincode *</Label>
+                    <Input
+                      id="pincode"
+                      value={data.personalInfo.pincode}
+                      onChange={(e) => handleInputChange("personalInfo", "pincode", e.target.value)}
+                      placeholder="Enter pincode"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step 2: Financial Information */}
+            {currentStep === 2 && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="annualIncome">Annual Income (₹) *</Label>
+                    <Input
+                      id="annualIncome"
+                      type="number"
+                      value={data.financialInfo.annualIncome || ''}
+                      onChange={(e) => handleInputChange("financialInfo", "annualIncome", Number(e.target.value))}
+                      placeholder="Enter your annual income"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="monthlyIncome">Monthly Income (₹) *</Label>
+                    <Input
+                      id="monthlyIncome"
+                      type="number"
+                      value={data.financialInfo.monthlyIncome || ''}
+                      onChange={(e) => handleInputChange("financialInfo", "monthlyIncome", Number(e.target.value))}
+                      placeholder="Enter your monthly income"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
                     <Label htmlFor="occupation">Occupation *</Label>
                     <Select
-                      value={data.personalInfo.occupation}
-                      onValueChange={(value) => handleInputChange("personalInfo", "occupation", value)}
+                      value={data.financialInfo.occupation}
+                      onValueChange={(value) => handleInputChange("financialInfo", "occupation", value)}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select your occupation" />
@@ -343,115 +436,26 @@ export default function OnboardingPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
-              </div>
-            )}
-
-            {/* Step 2: Financial Information */}
-            {currentStep === 2 && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="annualIncome">Annual Income (₹) *</Label>
-                    <Select
-                      value={data.financialInfo.annualIncome}
-                      onValueChange={(value) => handleInputChange("financialInfo", "annualIncome", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select income range" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="0-300000">₹0 - ₹3,00,000</SelectItem>
-                        <SelectItem value="300000-600000">₹3,00,000 - ₹6,00,000</SelectItem>
-                        <SelectItem value="600000-1000000">₹6,00,000 - ₹10,00,000</SelectItem>
-                        <SelectItem value="1000000-1500000">₹10,00,000 - ₹15,00,000</SelectItem>
-                        <SelectItem value="1500000+">₹15,00,000+</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="currentSavings">Current Savings (₹) *</Label>
-                    <Select
-                      value={data.financialInfo.currentSavings}
-                      onValueChange={(value) => handleInputChange("financialInfo", "currentSavings", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select savings range" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="0-100000">₹0 - ₹1,00,000</SelectItem>
-                        <SelectItem value="100000-500000">₹1,00,000 - ₹5,00,000</SelectItem>
-                        <SelectItem value="500000-1000000">₹5,00,000 - ₹10,00,000</SelectItem>
-                        <SelectItem value="1000000-2500000">₹10,00,000 - ₹25,00,000</SelectItem>
-                        <SelectItem value="2500000+">₹25,00,000+</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="monthlyExpenses">Monthly Expenses (₹) *</Label>
-                  <Select
-                    value={data.financialInfo.monthlyExpenses}
-                    onValueChange={(value) => handleInputChange("financialInfo", "monthlyExpenses", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select expense range" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="0-25000">₹0 - ₹25,000</SelectItem>
-                      <SelectItem value="25000-50000">₹25,000 - ₹50,000</SelectItem>
-                      <SelectItem value="50000-75000">₹50,000 - ₹75,000</SelectItem>
-                      <SelectItem value="75000-100000">₹75,000 - ₹1,00,000</SelectItem>
-                      <SelectItem value="100000+">₹1,00,000+</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-3">
-                  <Label>Do you currently have any investments?</Label>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="hasInvestments"
-                      checked={data.financialInfo.hasInvestments}
-                      onCheckedChange={(checked) => handleInputChange("financialInfo", "hasInvestments", checked)}
+                    <Label htmlFor="employer">Employer</Label>
+                    <Input
+                      id="employer"
+                      value={data.financialInfo.employer}
+                      onChange={(e) => handleInputChange("financialInfo", "employer", e.target.value)}
+                      placeholder="Enter your employer name"
                     />
-                    <Label htmlFor="hasInvestments">Yes, I have existing investments</Label>
                   </div>
                 </div>
-                <div className="space-y-3">
-                  <Label>Risk Tolerance *</Label>
-                  <RadioGroup
-                    value={data.financialInfo.riskTolerance}
-                    onValueChange={(value) => handleInputChange("financialInfo", "riskTolerance", value)}
-                  >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="conservative" id="conservative" />
-                      <Label htmlFor="conservative">Conservative - I prefer stable, low-risk investments</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="moderate" id="moderate" />
-                      <Label htmlFor="moderate">Moderate - I'm comfortable with some risk for better returns</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="aggressive" id="aggressive" />
-                      <Label htmlFor="aggressive">Aggressive - I'm willing to take high risks for high returns</Label>
-                    </div>
-                  </RadioGroup>
-                </div>
                 <div className="space-y-2">
-                  <Label htmlFor="investmentExperience">Investment Experience *</Label>
-                  <Select
-                    value={data.financialInfo.investmentExperience}
-                    onValueChange={(value) => handleInputChange("financialInfo", "investmentExperience", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select your experience level" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="beginner">Beginner - New to investing</SelectItem>
-                      <SelectItem value="intermediate">Intermediate - Some experience with investments</SelectItem>
-                      <SelectItem value="advanced">Advanced - Experienced investor</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="workExperience">Work Experience (Years) *</Label>
+                  <Input
+                    id="workExperience"
+                    type="number"
+                    value={data.financialInfo.workExperience || ''}
+                    onChange={(e) => handleInputChange("financialInfo", "workExperience", Number(e.target.value))}
+                    placeholder="Enter years of work experience"
+                    min="0"
+                  />
                 </div>
               </div>
             )}
@@ -460,132 +464,86 @@ export default function OnboardingPage() {
             {currentStep === 3 && (
               <div className="space-y-4">
                 <div className="space-y-3">
-                  <Label>Primary Financial Goals * (Select all that apply)</Label>
+                  <Label>Short-term Financial Goals * (Select all that apply)</Label>
                   <div className="grid grid-cols-2 gap-3">
-                    {financialGoals.map((goal) => (
+                    {financialGoals.slice(0, 4).map((goal) => (
                       <div key={goal} className="flex items-center space-x-2">
                         <Checkbox
-                          id={goal}
-                          checked={data.goals.primaryGoals.includes(goal)}
+                          id={`short-${goal}`}
+                          checked={data.goals.shortTermGoals.includes(goal)}
                           onCheckedChange={(checked) =>
-                            handleArrayChange("goals", "primaryGoals", goal, checked as boolean)
+                            handleArrayChange("goals", "shortTermGoals", goal, checked as boolean)
                           }
                         />
-                        <Label htmlFor={goal} className="text-sm">
+                        <Label htmlFor={`short-${goal}`} className="text-sm">
                           {goal}
                         </Label>
                       </div>
                     ))}
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="timeHorizon">Investment Time Horizon *</Label>
-                  <Select
-                    value={data.goals.timeHorizon}
-                    onValueChange={(value) => handleInputChange("goals", "timeHorizon", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select your time horizon" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="short">Short-term (1-3 years)</SelectItem>
-                      <SelectItem value="medium">Medium-term (3-7 years)</SelectItem>
-                      <SelectItem value="long">Long-term (7+ years)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="targetAmount">Target Amount (₹)</Label>
-                  <Input
-                    id="targetAmount"
-                    value={data.goals.targetAmount}
-                    onChange={(e) => handleInputChange("goals", "targetAmount", e.target.value)}
-                    placeholder="e.g., 50,00,000"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="specificGoals">Specific Goals (Optional)</Label>
-                  <Textarea
-                    id="specificGoals"
-                    value={data.goals.specificGoals}
-                    onChange={(e) => handleInputChange("goals", "specificGoals", e.target.value)}
-                    placeholder="Tell us about any specific financial goals you have..."
-                    rows={3}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Step 4: Preferences */}
-            {currentStep === 4 && (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="preferredLanguage">Preferred Language *</Label>
-                  <Select
-                    value={data.preferences.preferredLanguage}
-                    onValueChange={(value) => handleInputChange("preferences", "preferredLanguage", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select your preferred language" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="english">English</SelectItem>
-                      <SelectItem value="hindi">Hindi</SelectItem>
-                      <SelectItem value="tamil">Tamil</SelectItem>
-                      <SelectItem value="telugu">Telugu</SelectItem>
-                      <SelectItem value="bengali">Bengali</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
                 <div className="space-y-3">
-                  <Label>Communication Preferences * (Select all that apply)</Label>
-                  <div className="space-y-2">
-                    {["Email", "SMS", "Push Notifications", "WhatsApp"].map((method) => (
-                      <div key={method} className="flex items-center space-x-2">
+                  <Label>Long-term Financial Goals * (Select all that apply)</Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {financialGoals.slice(4).map((goal) => (
+                      <div key={goal} className="flex items-center space-x-2">
                         <Checkbox
-                          id={method}
-                          checked={data.preferences.communicationPreference.includes(method)}
+                          id={`long-${goal}`}
+                          checked={data.goals.longTermGoals.includes(goal)}
                           onCheckedChange={(checked) =>
-                            handleArrayChange("preferences", "communicationPreference", method, checked as boolean)
+                            handleArrayChange("goals", "longTermGoals", goal, checked as boolean)
                           }
                         />
-                        <Label htmlFor={method}>{method}</Label>
+                        <Label htmlFor={`long-${goal}`} className="text-sm">
+                          {goal}
+                        </Label>
                       </div>
                     ))}
                   </div>
                 </div>
-                <Separator />
                 <div className="space-y-3">
-                  <Label>Additional Services</Label>
-                  <div className="space-y-3">
+                  <Label>Risk Tolerance *</Label>
+                  <RadioGroup
+                    value={data.goals.riskTolerance}
+                    onValueChange={(value) => handleInputChange("goals", "riskTolerance", value)}
+                  >
                     <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="advisoryServices"
-                        checked={data.preferences.advisoryServices}
-                        onCheckedChange={(checked) => handleInputChange("preferences", "advisoryServices", checked)}
-                      />
-                      <Label htmlFor="advisoryServices" className="flex flex-col space-y-1">
-                        <span>Personal Financial Advisory</span>
-                        <span className="text-sm text-muted-foreground">
-                          Get personalized advice from certified financial advisors
-                        </span>
-                      </Label>
+                      <RadioGroupItem value="Conservative" id="conservative" />
+                      <Label htmlFor="conservative">Conservative - I prefer stable, low-risk investments</Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="taxPlanningHelp"
-                        checked={data.preferences.taxPlanningHelp}
-                        onCheckedChange={(checked) => handleInputChange("preferences", "taxPlanningHelp", checked)}
-                      />
-                      <Label htmlFor="taxPlanningHelp" className="flex flex-col space-y-1">
-                        <span>Tax Planning Assistance</span>
-                        <span className="text-sm text-muted-foreground">Get help with tax optimization and filing</span>
-                      </Label>
+                      <RadioGroupItem value="Moderate" id="moderate" />
+                      <Label htmlFor="moderate">Moderate - I'm comfortable with some risk for better returns</Label>
                     </div>
-                  </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="Aggressive" id="aggressive" />
+                      <Label htmlFor="aggressive">Aggressive - I'm willing to take high risks for high returns</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+                <div className="space-y-3">
+                  <Label>Investment Experience *</Label>
+                  <RadioGroup
+                    value={data.goals.investmentExperience}
+                    onValueChange={(value) => handleInputChange("goals", "investmentExperience", value)}
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="Beginner" id="beginner" />
+                      <Label htmlFor="beginner">Beginner - I'm new to investing and need guidance</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="Intermediate" id="intermediate" />
+                      <Label htmlFor="intermediate">Intermediate - I have some investment experience</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="Advanced" id="advanced" />
+                      <Label htmlFor="advanced">Advanced - I'm experienced with various investment strategies</Label>
+                    </div>
+                  </RadioGroup>
                 </div>
               </div>
             )}
+
           </CardContent>
         </Card>
 
@@ -616,12 +574,12 @@ export default function OnboardingPage() {
         </div>
 
         {/* Selected Goals Preview */}
-        {currentStep === 3 && data.goals.primaryGoals.length > 0 && (
+        {currentStep === 3 && (data.goals.shortTermGoals.length > 0 || data.goals.longTermGoals.length > 0) && (
           <Card className="mt-6 bg-primary/5 border-primary/20">
             <CardContent className="p-4">
               <h4 className="font-medium mb-2">Selected Goals:</h4>
               <div className="flex flex-wrap gap-2">
-                {data.goals.primaryGoals.map((goal) => (
+                {[...data.goals.shortTermGoals, ...data.goals.longTermGoals].map((goal) => (
                   <Badge key={goal} variant="secondary">
                     {goal}
                   </Badge>
@@ -630,7 +588,8 @@ export default function OnboardingPage() {
             </CardContent>
           </Card>
         )}
+        </div>
       </div>
-    </div>
+    </AuthGuard>
   )
 }

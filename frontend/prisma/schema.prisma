@@ -1,0 +1,72 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  email        String   @unique
+  password     String
+  firstName    String
+  lastName     String
+  phone        String?
+  profilePhoto String?  // Base64 encoded profile photo
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Onboarding data
+  onboarding OnboardingData?
+  
+  @@map("users")
+}
+
+model OnboardingData {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String   @unique @db.ObjectId
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Personal Information
+  dateOfBirth       DateTime?
+  gender            String?
+  maritalStatus     String?
+  address           String?
+  city              String?
+  state             String?
+  pincode           String?
+  
+  // Financial Information
+  annualIncome      Float?
+  monthlyIncome     Float?
+  occupation        String?
+  employer          String?
+  workExperience    Int? // in years
+  
+  // Financial Goals
+  shortTermGoals        String[] // Array of short-term financial goals
+  longTermGoals         String[] // Array of long-term financial goals
+  riskTolerance         String? // Conservative, Moderate, Aggressive
+  investmentExperience  String? // Beginner, Intermediate, Advanced
+  
+  // Documents (stored as base64 or file references)
+  panCard           String? // Base64 encoded or file path
+  aadharCard        String? // Base64 encoded or file path
+  bankStatement     String? // Base64 encoded or file path
+  salarySlip        String? // Base64 encoded or file path
+  
+  // Onboarding Status
+  isCompleted       Boolean  @default(false)
+  completedSteps    String[] // Array of completed step names
+  currentStep       String?  // Current step in onboarding
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@map("onboarding_data")
+}

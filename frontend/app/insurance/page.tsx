@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Calendar, Shield, AlertTriangle, TrendingUp, FileText, Bell, Plus, Search, Filter } from "lucide-react"
+import { AuthGuard } from "@/components/AuthGuard"
 
 // Mock data for insurance policies
 const mockPolicies = [
@@ -92,7 +93,8 @@ export default function InsurancePage() {
   const duePolicies = mockPolicies.filter((p) => p.status === "Due").length
 
   return (
-    <div className="min-h-screen bg-background">
+    <AuthGuard requireAuth={true}>
+      <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -448,5 +450,6 @@ export default function InsurancePage() {
         </Tabs>
       </div>
     </div>
+    </AuthGuard>
   )
 }
