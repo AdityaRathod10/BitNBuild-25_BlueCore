@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Textarea } from "@/components/ui/textarea"
-import { Mail, Phone, Shield, Eye, EyeOff, Camera, Save, Edit, Trash2, Plus } from "lucide-react"
+import { Mail, Phone, Shield, Eye, EyeOff, Camera, Save, Edit, Trash2, Plus, Database, HelpCircle, LogOut, Settings } from "lucide-react"
 
 interface UserProfile {
   personalInfo: {
@@ -166,11 +166,12 @@ export default function ProfilePage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="personal">Personal Info</TabsTrigger>
           <TabsTrigger value="financial">Financial Info</TabsTrigger>
           <TabsTrigger value="preferences">Preferences</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
+          <TabsTrigger value="account">Account</TabsTrigger>
         </TabsList>
 
         <TabsContent value="personal" className="space-y-6">
@@ -567,6 +568,44 @@ export default function ProfilePage() {
                   <Button variant="destructive" className="w-full justify-start">
                     <Trash2 className="mr-2 h-4 w-4" />
                     Delete Account
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="account" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Account Management</CardTitle>
+              <CardDescription>Manage your account settings and data</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <h4 className="font-medium">Account Settings</h4>
+                <div className="space-y-2">
+                  <Button variant="outline" className="w-full justify-start bg-transparent">
+                    <Settings className="mr-2 h-4 w-4" />
+                    Profile Settings
+                  </Button>
+                  <Button variant="outline" className="w-full justify-start bg-transparent">
+                    <Database className="mr-2 h-4 w-4" />
+                    Data & Accounts
+                  </Button>
+                  <Button variant="outline" className="w-full justify-start bg-transparent">
+                    <HelpCircle className="mr-2 h-4 w-4" />
+                    Help & Support
+                  </Button>
+                </div>
+              </div>
+              <Separator />
+              <div className="space-y-2">
+                <h4 className="font-medium text-destructive">Account Actions</h4>
+                <div className="space-y-2">
+                  <Button variant="destructive" className="w-full justify-start">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sign Out
                   </Button>
                 </div>
               </div>
