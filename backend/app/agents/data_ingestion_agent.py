@@ -85,12 +85,31 @@ class DataIngestionAgent:
         # Store extracted data for reuse
         self.last_extracted_data = None
         
+        # Transaction categories mapping for fallback processing
+        self.category_mapping = {
+            'food': ['zomato', 'swiggy', 'food', 'restaurant', 'cafe', 'dining', 'dominos', 'pizza', 'burger'],
+            'transport': ['uber', 'ola', 'metro', 'bus', 'taxi', 'petrol', 'diesel', 'fuel'],
+            'shopping': ['amazon', 'flipkart', 'myntra', 'shopping', 'mall', 'store'],
+            'entertainment': ['netflix', 'prime', 'movie', 'cinema', 'music', 'game'],
+            'utilities': ['electricity', 'water', 'gas', 'internet', 'mobile', 'phone', 'recharge'],
+            'healthcare': ['hospital', 'medical', 'pharmacy', 'doctor', 'health'],
+            'investment': ['mutual', 'sip', 'ppf', 'elss', 'equity', 'stock', 'fd'],
+            'income': ['salary', 'bonus', 'interest', 'dividend', 'credit', 'income'],
+            'transfer': ['transfer', 'neft', 'imps', 'upi', 'paytm', 'phonepe', 'gpay'],
+            'loan_emi': ['emi', 'loan', 'mortgage', 'credit card'],
+            'insurance': ['insurance', 'premium', 'policy'],
+            'education': ['school', 'college', 'education', 'course', 'book'],
+            'rent': ['rent', 'maintenance', 'society']
+        }
+        
         print(f"✅ DEBUG: Data Ingestion AI agent initialized (Mode: {'AI' if self.agent else 'Fallback'})")
         logger.info("✅ Data Ingestion Agent initialized")
     
     def _get_data_ingestion_system_prompt(self) -> str:
         """Get comprehensive system prompt for data ingestion"""
         return """You are a financial document analysis specialist for Indian financial systems.
+
+CRITICAL INSTRUCTION: Extract EXACT amounts from documents. DO NOT assume monthly/annual periods unless clearly stated.
 
 DOCUMENT TYPES YOU PROCESS:
 1. **Bank Statements** (PDF/CSV/Images):
@@ -121,11 +140,11 @@ DOCUMENT TYPES YOU PROCESS:
 EXTRACTION REQUIREMENTS:
 
 **For Tax Agent Format:**
-- annual_income: Total yearly income from all sources
-- investments_80c: Section 80C eligible investments (PPF, ELSS, NSC, etc.)
-- health_insurance: Section 80D eligible premiums
-- home_loan_interest: Section 24B eligible interest payments
-- hra_claimed: HRA exemption amounts
+- annual_income: Extract EXACT total income amounts (do NOT multiply by 12 unless document shows monthly period)
+- investments_80c: Extract EXACT Section 80C amounts (PPF, ELSS, NSC, etc.)
+- health_insurance: Extract EXACT Section 80D premium amounts
+- home_loan_interest: Extract EXACT Section 24B interest amounts (NOT EMI)
+- hra_claimed: Extract EXACT HRA exemption amounts
 - other_deductions: Any additional deductions (80CCD, 80E, etc.)
 
 **For CIBIL Agent Format:**
@@ -139,6 +158,13 @@ EXTRACTION REQUIREMENTS:
 - account_age_months: Age of oldest credit account
 - recent_inquiries: Credit inquiries in last 12 months
 
+IMPORTANT RULES:
+1. **DO NOT assume time periods** - extract exact amounts shown
+2. **DO NOT multiply values** unless document explicitly states it's monthly/quarterly
+3. **For EMI amounts** - these are NOT interest amounts, mark home_loan_interest as 0 unless interest is specifically mentioned
+4. **For investment entries** - extract exact amounts, not annualized projections
+5. **If period is unclear** - use the exact amount shown in document
+
 INDIAN FINANCIAL CONTEXT:
 - Understand Indian tax sections (80C, 80D, 24B, HRA)
 - Recognize Indian bank formats, transaction codes
@@ -148,16 +174,16 @@ INDIAN FINANCIAL CONTEXT:
 
 CRITICAL: At the end of your analysis, provide clear extracted values in this format:
 EXTRACTED_VALUES:
-ANNUAL_INCOME: [exact number only]
-INVESTMENTS_80C: [exact number only]
-HEALTH_INSURANCE: [exact number only]  
-HOME_LOAN_INTEREST: [exact number only]
-HRA_CLAIMED: [exact number only]
+ANNUAL_INCOME: [exact number from document only]
+INVESTMENTS_80C: [exact PPF/ELSS/NSC amounts only]
+HEALTH_INSURANCE: [exact insurance premium amounts only]  
+HOME_LOAN_INTEREST: [exact interest amounts only, NOT EMI]
+HRA_CLAIMED: [exact HRA amounts only]
 CURRENT_CIBIL_SCORE: [number if available, otherwise 0]
 CREDIT_CARDS: [number of cards]
 CREDIT_UTILIZATION: [percentage as number]
 
-Be precise with number extraction and provide confidence scores for extracted values.
+Be precise with number extraction and DO NOT make period assumptions.
 """
 
     def process_file_path(self, file_path: str) -> Dict[str, Any]:
@@ -613,6 +639,13 @@ Document Info:
 - Type: {file_type.upper()}
 - Content: {content_summary}
 
+CRITICAL RULES:
+1. Extract EXACT amounts from the document - DO NOT multiply or assume periods
+2. If you see "Salary Credit - ₹70,659" - extract 70659 as annual_income
+3. If you see "PPF - Investment ₹6,937" - extract 6937 as investments_80c
+4. If you see "Home Loan EMI ₹7,056" - this is EMI, NOT interest. Set home_loan_interest to 0
+5. DO NOT make assumptions about monthly/annual periods
+
 ANALYSIS REQUIRED:
 
 ### 1. DOCUMENT CLASSIFICATION:
@@ -625,13 +658,13 @@ Identify the document type:
 - Other Financial Document
 
 ### 2. DATA EXTRACTION FOR TAX AGENT:
-Extract and calculate:
-- **Annual Income**: Total yearly income from all sources
-- **80C Investments**: PPF, ELSS, NSC, LIC premiums, tax-saving FDs
-- **Health Insurance (80D)**: Health insurance premiums paid
-- **Home Loan Interest (24B)**: Interest paid on home loans
-- **HRA Claimed**: House rent allowance claimed
-- **Other Deductions**: 80CCD (NPS), 80E (education loan), etc.
+Extract EXACT amounts (no calculations):
+- **Annual Income**: Exact salary/income amounts shown
+- **80C Investments**: Exact PPF, ELSS, NSC, LIC amounts shown
+- **Health Insurance (80D)**: Exact health insurance premium amounts shown
+- **Home Loan Interest (24B)**: Exact interest amounts shown (NOT EMI amounts)
+- **HRA Claimed**: Exact HRA amounts shown
+- **Other Deductions**: Other exact deduction amounts
 
 ### 3. DATA EXTRACTION FOR CIBIL AGENT:
 Extract and identify:
@@ -647,25 +680,25 @@ Extract and identify:
 
 IMPORTANT INSTRUCTIONS:
 - Extract EXACT amounts from the document
-- Convert monthly figures to annual where needed
-- Identify Indian financial instruments correctly
+- DO NOT multiply monthly figures by 12
+- DO NOT assume time periods
+- If EMI is mentioned, it's NOT the same as loan interest
 - If information is missing, mark as 0 or "unknown"
 
 CRITICAL: At the end of your response, provide clear extracted values in this format:
 EXTRACTED_VALUES:
-ANNUAL_INCOME: [number only]
-INVESTMENTS_80C: [number only]
-HEALTH_INSURANCE: [number only]  
-HOME_LOAN_INTEREST: [number only]
-HRA_CLAIMED: [number only]
+ANNUAL_INCOME: [exact number from document]
+INVESTMENTS_80C: [exact number from document]
+HEALTH_INSURANCE: [exact number from document]  
+HOME_LOAN_INTEREST: [exact interest amount, NOT EMI]
+HRA_CLAIMED: [exact number from document]
 CURRENT_CIBIL_SCORE: [number only, 0 if not available]
 CREDIT_CARDS: [number only]
 CREDIT_UTILIZATION: [number only, percentage]
 
-RESPONSE FORMAT:
-Provide detailed analysis with specific amounts and clear reasoning for each calculation.
+Extract exactly what you see in the document without any calculations or assumptions.
 """
-
+    
     def _parse_ai_response(self, ai_response: str) -> Dict[str, Any]:
         """Parse AI response and extract structured data"""
         try:
@@ -873,6 +906,273 @@ Provide detailed analysis with specific amounts and clear reasoning for each cal
         if self.last_extracted_data:
             return self.last_extracted_data.get("cibil_agent_format", {})
         return {}
+
+    # Transaction extraction methods (from your original file)
+    def extract_transactions(self, file_data: bytes, filename: str, file_type: str) -> Dict[str, Any]:
+        """Extract individual transactions for transaction-level analysis"""
+        try:
+            print(f"Extracting transactions from: {filename}")
+            
+            # Extract raw data based on file type
+            if file_type.lower() == 'pdf':
+                raw_data = self._extract_pdf_data(file_data)
+            elif file_type.lower() == 'csv':
+                raw_data = self._extract_csv_data(file_data)
+            elif file_type.lower() in ['xlsx', 'xls']:
+                raw_data = self._extract_excel_data(file_data)
+            else:
+                raise Exception(f"Unsupported file type: {file_type}")
+            
+            # Use AI to extract and structure transactions
+            if self.agent and raw_data.get('content'):
+                transactions = self._ai_extract_transactions(raw_data['content'])
+            else:
+                transactions = self._fallback_extract_transactions(raw_data)
+            
+            # Generate summary
+            summary = self._generate_transaction_summary(transactions)
+            
+            return {
+                "transactions": transactions,
+                "summary": summary,
+                "metadata": {
+                    "filename": filename,
+                    "file_type": file_type,
+                    "processed_at": datetime.now().isoformat(),
+                    "extraction_method": "AI" if self.agent else "Fallback"
+                }
+            }
+            
+        except Exception as e:
+            logger.error(f"Transaction extraction failed: {str(e)}")
+            return {
+                "transactions": [],
+                "summary": {
+                    "error": str(e),
+                    "total_transactions": 0
+                },
+                "metadata": {
+                    "filename": filename,
+                    "extraction_failed": True
+                }
+            }
+
+    def _ai_extract_transactions(self, content: str) -> List[Dict[str, Any]]:
+        """Use AI to extract transactions from content"""
+        try:
+            prompt = f"""
+Extract individual financial transactions from the following document content and return them in JSON format.
+
+DOCUMENT CONTENT:
+{content[:4000]}  # Limit content to avoid token limits
+
+Please extract each transaction with:
+* date (YYYY-MM-DD format)
+* description (clean, readable)
+* amount (negative for debits, positive for credits)
+* type ("debit" or "credit")
+* category (appropriate category from the list)
+
+Return only valid JSON with transactions array.
+"""
+            
+            ai_response = self.agent.run(prompt)
+            
+            # Try to parse JSON response
+            try:
+                response_data = json.loads(ai_response)
+                return response_data.get("transactions", [])
+            except json.JSONDecodeError:
+                # Try to extract JSON from response
+                json_match = re.search(r'\{.*\}', ai_response, re.DOTALL)
+                if json_match:
+                    response_data = json.loads(json_match.group())
+                    return response_data.get("transactions", [])
+                else:
+                    print("AI response was not valid JSON, using fallback")
+                    return []
+                    
+        except Exception as e:
+            logger.error(f"AI extraction error: {e}")
+            return []
+
+    def _fallback_extract_transactions(self, raw_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Fallback transaction extraction without AI"""
+        transactions = []
+        
+        try:
+            # If we have structured data (CSV/Excel)
+            if 'transactions' in raw_data:
+                for row in raw_data['transactions']:
+                    transaction = self._parse_transaction_row(row)
+                    if transaction:
+                        transactions.append(transaction)
+        except Exception as e:
+            logger.error(f"Fallback extraction error: {e}")
+        
+        return transactions
+
+    def _parse_transaction_row(self, row: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Parse a single transaction row"""
+        try:
+            # Find amount
+            amount = None
+            amount_fields = ['amount', 'debit', 'credit', 'withdrawal', 'deposit']
+            for field in amount_fields:
+                if field in row and row[field] is not None:
+                    amount = self._clean_amount(str(row[field]))
+                    break
+            
+            if amount is None:
+                return None
+            
+            # Find date
+            date = None
+            date_fields = ['date', 'transaction_date', 'txn_date', 'posting_date']
+            for field in date_fields:
+                if field in row and row[field] is not None:
+                    date = self._clean_date(str(row[field]))
+                    break
+            
+            if not date:
+                date = datetime.now().strftime('%Y-%m-%d')
+            
+            # Find description
+            description = ""
+            desc_fields = ['description', 'particulars', 'details', 'narration', 'reference']
+            for field in desc_fields:
+                if field in row and row[field] is not None:
+                    description = str(row[field]).strip()
+                    break
+            
+            # Determine type and clean amount
+            if amount < 0:
+                transaction_type = "debit"
+            else:
+                transaction_type = "credit"
+            
+            # Categorize transaction
+            category = self._categorize_transaction(description)
+            
+            return {
+                "date": date,
+                "description": description,
+                "amount": float(amount),
+                "type": transaction_type,
+                "category": category
+            }
+            
+        except Exception as e:
+            logger.error(f"Error parsing transaction row: {e}")
+            return None
+
+    def _clean_amount(self, amount_str: str) -> float:
+        """Clean and convert amount to float"""
+        try:
+            # Remove currency symbols, commas, extra spaces
+            cleaned = re.sub(r'[₹$,\s]', '', amount_str)
+            # Handle brackets for negative amounts
+            if '(' in cleaned and ')' in cleaned:
+                cleaned = '-' + cleaned.replace('(', '').replace(')', '')
+            return float(cleaned)
+        except:
+            return 0.0
+
+    def _clean_date(self, date_str: str) -> str:
+        """Clean and standardize date"""
+        try:
+            # Common date patterns
+            patterns = [
+                '%Y-%m-%d',
+                '%d-%m-%Y',
+                '%m-%d-%Y',
+                '%d/%m/%Y',
+                '%m/%d/%Y',
+                '%Y/%m/%d',
+                '%d-%b-%Y',
+                '%d %b %Y'
+            ]
+            
+            for pattern in patterns:
+                try:
+                    date_obj = datetime.strptime(date_str.strip(), pattern)
+                    return date_obj.strftime('%Y-%m-%d')
+                except:
+                    continue
+            
+            return datetime.now().strftime('%Y-%m-%d')
+            
+        except:
+            return datetime.now().strftime('%Y-%m-%d')
+
+    def _categorize_transaction(self, description: str) -> str:
+        """Categorize transaction based on description"""
+        description_lower = description.lower()
+        
+        for category, keywords in self.category_mapping.items():
+            for keyword in keywords:
+                if keyword in description_lower:
+                    return self._format_category_name(category)
+        
+        return "Other"
+
+    def _format_category_name(self, category: str) -> str:
+        """Format category name for display"""
+        category_names = {
+            'food': 'Food & Dining',
+            'transport': 'Transportation',
+            'shopping': 'Shopping',
+            'entertainment': 'Entertainment',
+            'utilities': 'Utilities',
+            'healthcare': 'Healthcare',
+            'investment': 'Investment',
+            'income': 'Income',
+            'transfer': 'Transfer',
+            'loan_emi': 'Loan/EMI',
+            'insurance': 'Insurance',
+            'education': 'Education',
+            'rent': 'Rent & Maintenance'
+        }
+        return category_names.get(category, 'Other')
+
+    def _generate_transaction_summary(self, transactions: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Generate summary of transactions"""
+        if not transactions:
+            return {
+                "total_transactions": 0,
+                "total_credits": 0.0,
+                "total_debits": 0.0,
+                "categories": {},
+                "date_range": {}
+            }
+        
+        total_credits = sum(t["amount"] for t in transactions if t["amount"] > 0)
+        total_debits = sum(t["amount"] for t in transactions if t["amount"] < 0)
+        
+        # Category breakdown
+        categories = {}
+        for transaction in transactions:
+            category = transaction["category"]
+            if category not in categories:
+                categories[category] = {"count": 0, "amount": 0.0}
+            categories[category]["count"] += 1
+            categories[category]["amount"] += transaction["amount"]
+        
+        # Date range
+        dates = [t["date"] for t in transactions]
+        date_range = {
+            "start": min(dates),
+            "end": max(dates)
+        }
+        
+        return {
+            "total_transactions": len(transactions),
+            "total_credits": round(total_credits, 2),
+            "total_debits": round(total_debits, 2),
+            "net_amount": round(total_credits + total_debits, 2),
+            "categories": categories,
+            "date_range": date_range
+        }
 
 # Interactive Test Function
 def interactive_file_processor():
