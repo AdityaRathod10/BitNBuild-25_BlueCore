@@ -15,3 +15,8 @@ pandas==2.0.3
 openpyxl==3.1.2
 PyPDF2==3.0.1
 pydantic==2.5.0
+Pillow
+pdf2image
+pdfplumber
+google-generativeai
+scikit-learn
