@@ -19,6 +19,7 @@ import {
   Settings,
   Users,
 } from "lucide-react"
+import { AuthGuard } from "@/components/AuthGuard"
 
 const helpCategories = [
   {
@@ -104,7 +105,8 @@ const faqData = [
 
 export default function HelpPage() {
   return (
-    <div className="container mx-auto p-4 sm:p-6 max-w-6xl">
+    <AuthGuard requireAuth={true}>
+      <div className="container mx-auto p-4 sm:p-6 max-w-6xl">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center space-x-3 mb-3">
@@ -257,5 +259,6 @@ export default function HelpPage() {
         </div>
       </div>
     </div>
+    </AuthGuard>
   )
 }

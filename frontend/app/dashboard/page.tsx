@@ -4,10 +4,12 @@ import { Calculator, TrendingUp, CreditCard, PiggyBank, Target, ArrowUpRight, Al
 import { TaxSavingMeter } from "@/components/dashboard/tax-saving-meter"
 import { CashFlowOverview } from "@/components/dashboard/cash-flow-overview"
 import { FinancialSummary } from "@/components/dashboard/financial-summary"
+import { AuthGuard } from "@/components/AuthGuard"
 
 export default function DashboardPage() {
   return (
-    <div className="min-h-screen bg-background">
+    <AuthGuard requireAuth={true}>
+      <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
         <div className="space-y-8">
           {/* Welcome Section */}
@@ -168,5 +170,6 @@ export default function DashboardPage() {
         </div>
       </div>
     </div>
+    </AuthGuard>
   )
 }

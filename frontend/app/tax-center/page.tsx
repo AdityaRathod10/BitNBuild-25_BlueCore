@@ -4,10 +4,12 @@ import { DeductionBreakdown } from "@/components/tax-center/deduction-breakdown"
 import { IncomeExpenses } from "@/components/tax-center/income-expenses"
 import { AuditProofVault } from "@/components/tax-center/audit-proof-vault"
 import { Calculator } from "lucide-react"
+import { AuthGuard } from "@/components/AuthGuard"
 
 export default function TaxCenterPage() {
   return (
-    <div className="min-h-screen bg-background">
+    <AuthGuard requireAuth={true}>
+      <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
         <div className="space-y-8">
           {/* Header */}
@@ -54,5 +56,6 @@ export default function TaxCenterPage() {
         </div>
       </div>
     </div>
+    </AuthGuard>
   )
 }

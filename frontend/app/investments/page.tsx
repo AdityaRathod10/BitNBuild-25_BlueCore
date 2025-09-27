@@ -4,10 +4,12 @@ import { HoldingsView } from "@/components/investments/holdings-view"
 import { CapitalGainsHarvester } from "@/components/investments/capital-gains-harvester"
 import { InvestmentSync } from "@/components/investments/investment-sync"
 import { TrendingUp } from "lucide-react"
+import { AuthGuard } from "@/components/AuthGuard"
 
 export default function InvestmentsPage() {
   return (
-    <div className="min-h-screen bg-background">
+    <AuthGuard requireAuth={true}>
+      <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
         <div className="space-y-8">
           {/* Header */}
@@ -49,5 +51,6 @@ export default function InvestmentsPage() {
         </div>
       </div>
     </div>
+    </AuthGuard>
   )
 }

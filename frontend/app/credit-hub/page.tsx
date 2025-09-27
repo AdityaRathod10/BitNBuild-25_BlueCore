@@ -4,10 +4,12 @@ import { CreditUtilization } from "@/components/credit-hub/credit-utilization"
 import { CibilScenarioSimulator } from "@/components/credit-hub/cibil-scenario-simulator"
 import { CreditRecommendations } from "@/components/credit-hub/credit-recommendations"
 import { CreditCard } from "lucide-react"
+import { AuthGuard } from "@/components/AuthGuard"
 
 export default function CreditHubPage() {
   return (
-    <div className="min-h-screen bg-background">
+    <AuthGuard requireAuth={true}>
+      <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
         <div className="space-y-8">
           {/* Header */}
@@ -49,5 +51,6 @@ export default function CreditHubPage() {
         </div>
       </div>
     </div>
+    </AuthGuard>
   )
 }

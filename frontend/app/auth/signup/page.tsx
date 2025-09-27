@@ -4,6 +4,8 @@ import type React from "react"
 
 import { useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { AuthGuard } from "@/components/AuthGuard"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -11,35 +13,72 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Separator } from "@/components/ui/separator"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Zap, Eye, EyeOff, Mail, Lock, User, ArrowRight } from "lucide-react"
+import { authApi } from "@/lib/api"
+import { useAuth } from "@/contexts/AuthContext"
+import { useToast } from "@/hooks/use-toast"
+import { ToastContainer } from "@/components/ui/toast"
 
 export default function SignupPage() {
+  const router = useRouter()
+  const { login } = useAuth()
+  const { success, error, toasts, removeToast } = useToast()
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [formData, setFormData] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
     email: "",
     password: "",
     confirmPassword: "",
+    phone: "",
     agreeToTerms: false,
   })
   const [isLoading, setIsLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords don't match")
+      error("Passwords don't match", "Please make sure both passwords are the same")
       return
     }
+    
     if (!formData.agreeToTerms) {
-      alert("Please agree to the terms and conditions")
+      error("Terms and Conditions", "Please agree to the terms and conditions")
       return
     }
+
+    if (formData.password.length < 6) {
+      error("Password too short", "Password must be at least 6 characters long")
+      return
+    }
+
     setIsLoading(true)
-    // Simulate signup process
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    setIsLoading(false)
-    // Redirect to onboarding
-    window.location.href = "/onboarding"
+    
+    try {
+      const response = await authApi.register({
+        email: formData.email,
+        password: formData.password,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phone: formData.phone || undefined,
+      })
+
+      // Store user data and token
+      login(response.user, response.token)
+      
+      success("Account created successfully!", "Welcome to TaxWise")
+      
+      // Redirect to onboarding
+      setTimeout(() => {
+        router.push("/onboarding")
+      }, 1500)
+      
+    } catch (err) {
+      error("Registration failed", err instanceof Error ? err.message : "Something went wrong")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleInputChange = (field: string, value: string | boolean) => {
@@ -47,8 +86,10 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted/20 p-4">
-      <div className="w-full max-w-md space-y-6">
+    <AuthGuard requireAuth={false}>
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted/20 p-4">
+        <div className="w-full max-w-md space-y-6">
         {/* Logo */}
         <div className="flex justify-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg">
@@ -63,23 +104,40 @@ export default function SignupPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="name"
-                    type="text"
-                    placeholder="Enter your full name"
-                    value={formData.name}
-                    onChange={(e) => handleInputChange("name", e.target.value)}
-                    className="pl-10"
-                    required
-                  />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="firstName">First Name *</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="firstName"
+                      type="text"
+                      placeholder="First name"
+                      value={formData.firstName}
+                      onChange={(e) => handleInputChange("firstName", e.target.value)}
+                      className="pl-10"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lastName">Last Name *</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="lastName"
+                      type="text"
+                      placeholder="Last name"
+                      value={formData.lastName}
+                      onChange={(e) => handleInputChange("lastName", e.target.value)}
+                      className="pl-10"
+                      required
+                    />
+                  </div>
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">Email *</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -90,6 +148,20 @@ export default function SignupPage() {
                     onChange={(e) => handleInputChange("email", e.target.value)}
                     className="pl-10"
                     required
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone Number</Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="phone"
+                    type="tel"
+                    placeholder="+91 98765 43210"
+                    value={formData.phone}
+                    onChange={(e) => handleInputChange("phone", e.target.value)}
+                    className="pl-10"
                   />
                 </div>
               </div>
@@ -188,7 +260,8 @@ export default function SignupPage() {
             </div>
           </CardFooter>
         </Card>
+        </div>
       </div>
-    </div>
+    </AuthGuard>
   )
 }

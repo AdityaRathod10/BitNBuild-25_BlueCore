@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,7 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
-import { Bot, Send, User, Sparkles, TrendingUp, Calculator, PiggyBank, Shield, Lightbulb } from "lucide-react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Bot, Send, User, Sparkles, TrendingUp, Calculator, PiggyBank, Shield, Lightbulb, ArrowDown, Copy, RotateCcw } from "lucide-react"
+import { AuthGuard } from "@/components/AuthGuard"
 
 interface Message {
   id: string
@@ -51,20 +52,36 @@ export default function AICopilotPage() {
   ])
   const [inputValue, setInputValue] = useState("")
   const [isTyping, setIsTyping] = useState(false)
+  const [showScrollButton, setShowScrollButton] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
     if (scrollAreaRef.current) {
-      const scrollContainer = scrollAreaRef.current.querySelector("[data-radix-scroll-area-viewport]")
-      if (scrollContainer) {
-        scrollContainer.scrollTop = scrollContainer.scrollHeight
-      }
+      scrollAreaRef.current.scrollTo({
+        top: scrollAreaRef.current.scrollHeight,
+        behavior: 'smooth'
+      })
     }
   }
 
   useEffect(() => {
     scrollToBottom()
   }, [messages])
+
+  useEffect(() => {
+    const scrollContainer = scrollAreaRef.current
+    if (!scrollContainer) return
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = scrollContainer
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 100
+      setShowScrollButton(!isNearBottom)
+    }
+
+    scrollContainer.addEventListener('scroll', handleScroll)
+    return () => scrollContainer.removeEventListener('scroll', handleScroll)
+  }, [])
 
   const getAIResponse = (query: string): string => {
     const lowerQuery = query.toLowerCase()
@@ -125,8 +142,26 @@ export default function AICopilotPage() {
     }
   }
 
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+  }
+
+  const clearChat = () => {
+    setMessages([
+      {
+        id: "1",
+        type: "ai",
+        content:
+          "Hello! I'm your AI financial co-pilot. I'm here to help you optimize your taxes, plan investments, analyze spending, and achieve your financial goals. How can I assist you today?",
+        timestamp: new Date(),
+        suggestions: ["Tax Optimization", "Investment Planning", "Budget Review", "Insurance Analysis"],
+      },
+    ])
+  }
+
   return (
-    <div className="container mx-auto p-4 sm:p-6 max-w-7xl">
+    <AuthGuard requireAuth={true}>
+      <div className="container mx-auto p-4 sm:p-6 max-w-7xl">
       <div className="mb-8">
         <div className="flex items-center space-x-3 mb-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg">
@@ -193,115 +228,163 @@ export default function AICopilotPage() {
 
         {/* Chat Interface */}
         <div className="xl:col-span-3">
-          <Card className="h-[700px] flex flex-col shadow-sm">
-            <CardHeader className="flex-shrink-0 border-b bg-muted/30">
+          <Card className="h-[600px] flex flex-col shadow-sm overflow-hidden">
+            <CardHeader className="flex-shrink-0 border-b bg-muted/30 px-6 py-4">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-xl font-semibold">Chat with AI Co-Pilot</CardTitle>
-                <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-200">
-                  <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-                  Online
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="flex-1 flex flex-col p-0">
-              <ScrollArea className="flex-1 p-6" ref={scrollAreaRef}>
-                <div className="space-y-6">
-                  {messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`flex ${message.type === "user" ? "justify-end" : "justify-start"}`}
-                    >
-                      <div
-                        className={`flex max-w-[85%] ${message.type === "user" ? "flex-row-reverse" : "flex-row"} items-start gap-3`}
-                      >
-                        <div
-                          className={`flex h-10 w-10 items-center justify-center rounded-full flex-shrink-0 ${
-                            message.type === "user"
-                              ? "bg-primary text-primary-foreground shadow-md"
-                              : "bg-muted border-2 border-background shadow-sm"
-                          }`}
-                        >
-                          {message.type === "user" ? <User className="h-5 w-5" /> : <Bot className="h-5 w-5" />}
-                        </div>
-                        <div className="space-y-2">
-                          <div
-                            className={`rounded-2xl px-4 py-3 ${
-                              message.type === "user"
-                                ? "bg-primary text-primary-foreground shadow-md"
-                                : "bg-muted border shadow-sm"
-                            }`}
-                          >
-                            <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
-                          </div>
-                          {message.suggestions && (
-                            <div className="flex flex-wrap gap-2 mt-3">
-                              {message.suggestions.map((suggestion, index) => (
-                                <Button
-                                  key={index}
-                                  variant="outline"
-                                  size="sm"
-                                  className="h-8 px-3 text-xs rounded-full hover:bg-primary hover:text-primary-foreground transition-colors bg-transparent"
-                                  onClick={() => handleSendMessage(suggestion)}
-                                >
-                                  {suggestion}
-                                </Button>
-                              ))}
-                            </div>
-                          )}
-                          <p className="text-xs text-muted-foreground px-1">
-                            {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  {isTyping && (
-                    <div className="flex justify-start">
-                      <div className="flex items-start gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted border-2 border-background shadow-sm">
-                          <Bot className="h-5 w-5" />
-                        </div>
-                        <div className="rounded-2xl px-4 py-3 bg-muted border shadow-sm">
-                          <div className="flex space-x-1">
-                            <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"></div>
-                            <div
-                              className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"
-                              style={{ animationDelay: "0.1s" }}
-                            ></div>
-                            <div
-                              className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"
-                              style={{ animationDelay: "0.2s" }}
-                            ></div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                <div className="flex items-center space-x-3">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback className="bg-muted">
+                      <Bot className="h-4 w-4 text-foreground" />
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <CardTitle className="text-xl font-semibold">AI Co-Pilot</CardTitle>
+                    <p className="text-sm text-muted-foreground">Financial Assistant</p>
+                  </div>
                 </div>
-              </ScrollArea>
-              <Separator />
-              <div className="p-6 bg-muted/30">
-                <div className="flex space-x-3">
-                  <Input
-                    placeholder="Ask me anything about your finances..."
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    className="flex-1 h-12 rounded-xl border-2 focus:border-primary transition-colors"
-                  />
+                <div className="flex items-center space-x-2">
+                  <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-200">
+                    <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
+                    Online
+                  </Badge>
                   <Button
-                    onClick={() => handleSendMessage(inputValue)}
-                    disabled={!inputValue.trim() || isTyping}
-                    className="h-12 px-6 rounded-xl shadow-md hover:shadow-lg transition-all"
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearChat}
+                    className="h-8 w-8 p-0"
                   >
-                    <Send className="h-5 w-5" />
+                    <RotateCcw className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
-            </CardContent>
+            </CardHeader>
+            
+            <div className="flex-1 flex flex-col min-h-0 relative">
+              {/* Messages Area - Scrollable */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-6" ref={scrollAreaRef}>
+                {messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex ${message.type === "user" ? "justify-end" : "justify-start"}`}
+                  >
+                    <div
+                      className={`flex max-w-[85%] ${message.type === "user" ? "flex-row-reverse" : "flex-row"} items-start gap-3`}
+                    >
+                      <Avatar className="h-8 w-8 flex-shrink-0">
+                        <AvatarImage src={message.type === "user" ? "/placeholder-user.jpg" : undefined} />
+                        <AvatarFallback className={message.type === "user" ? "bg-primary text-primary-foreground" : "bg-muted"}>
+                          {message.type === "user" ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4 text-foreground" />}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="space-y-2 flex-1">
+                        <div
+                          className={`rounded-2xl px-4 py-3 ${
+                            message.type === "user"
+                              ? "bg-primary text-primary-foreground shadow-md"
+                              : "bg-muted border shadow-sm"
+                          }`}
+                        >
+                          <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                        </div>
+                        {message.suggestions && message.type === "ai" && (
+                          <div className="flex flex-wrap gap-2 mt-3">
+                            {message.suggestions.map((suggestion, index) => (
+                              <Button
+                                key={index}
+                                variant="outline"
+                                size="sm"
+                                className="h-8 px-3 text-xs rounded-full hover:bg-primary hover:text-primary-foreground transition-colors bg-transparent"
+                                onClick={() => handleSendMessage(suggestion)}
+                              >
+                                {suggestion}
+                              </Button>
+                            ))}
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs text-muted-foreground px-1">
+                            {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                          </p>
+                          {message.type === "ai" && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => copyToClipboard(message.content)}
+                            >
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {isTyping && (
+                  <div className="flex justify-start">
+                    <div className="flex items-start gap-3">
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback className="bg-muted">
+                          <Bot className="h-4 w-4 text-foreground" />
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="rounded-2xl px-4 py-3 bg-muted border shadow-sm">
+                        <div className="flex space-x-1">
+                          <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"></div>
+                          <div
+                            className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"
+                            style={{ animationDelay: "0.1s" }}
+                          ></div>
+                          <div
+                            className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"
+                            style={{ animationDelay: "0.2s" }}
+                          ></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+              
+              {/* Scroll to bottom button */}
+              {showScrollButton && (
+                <Button
+                  onClick={scrollToBottom}
+                  size="sm"
+                  className="absolute bottom-20 right-6 z-10 h-10 w-10 rounded-full shadow-lg hover:shadow-xl transition-all"
+                  variant="secondary"
+                >
+                  <ArrowDown className="h-4 w-4" />
+                </Button>
+              )}
+              
+              {/* Sticky Input Area */}
+              <div className="flex-shrink-0 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+                <div className="p-6">
+                  <div className="flex space-x-3">
+                    <Input
+                      placeholder="Ask me anything about your finances..."
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      className="flex-1 h-12 rounded-xl border-2 focus:border-primary transition-colors"
+                    />
+                    <Button
+                      onClick={() => handleSendMessage(inputValue)}
+                      disabled={!inputValue.trim() || isTyping}
+                      className="h-12 px-6 rounded-xl shadow-md hover:shadow-lg transition-all"
+                    >
+                      <Send className="h-5 w-5" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </Card>
         </div>
       </div>
     </div>
+    </AuthGuard>
   )
 }
