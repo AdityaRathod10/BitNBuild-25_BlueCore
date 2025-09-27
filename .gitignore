@@ -55,6 +55,7 @@ pnpm-debug.log*
 /backend/env/
 /backend/.venv/
 backend/ENV/
+backend/agent_workspace/
 
 # Alembic migration cache
 /backend/alembic/__pycache__/
