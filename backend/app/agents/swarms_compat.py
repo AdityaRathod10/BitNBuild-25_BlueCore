@@ -19,7 +19,7 @@ def create_agent():
         
         def create_groq_agent(agent_name: str, system_prompt: str, groq_api_key: str):
             model = GroqModel(
-                model_name="llama3-8b-8192",
+                model_name="groq/llama-3.3-70b-versatile",
                 groq_api_key=groq_api_key,
                 max_tokens=4000,
                 temperature=0.1
@@ -82,7 +82,7 @@ def create_agent():
 class GroqAPIAgent:
     """Direct Groq API implementation as fallback"""
     
-    def __init__(self, agent_name: str, system_prompt: str, groq_api_key: str):
+    def _init_(self, agent_name: str, system_prompt: str, groq_api_key: str):
         self.agent_name = agent_name
         self.system_prompt = system_prompt
         self.groq_api_key = groq_api_key
