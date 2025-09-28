@@ -13,13 +13,20 @@ export async function verifyPassword(password: string, hashedPassword: string): 
 }
 
 export function generateToken(userId: string): string {
-  return jwt.sign({ userId }, JWT_SECRET, { expiresIn: '7d' })
+  console.log('Generating token for user:', userId, 'with JWT_SECRET:', JWT_SECRET ? 'Present' : 'Missing')
+  const token = jwt.sign({ userId }, JWT_SECRET, { expiresIn: '7d' })
+  console.log('Generated token:', token.substring(0, 20) + '...')
+  return token
 }
 
 export function verifyToken(token: string): { userId: string } | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as { userId: string }
-  } catch {
+    console.log('Verifying token with JWT_SECRET:', JWT_SECRET ? 'Present' : 'Missing')
+    const result = jwt.verify(token, JWT_SECRET) as { userId: string }
+    console.log('Token verification successful:', result)
+    return result
+  } catch (error) {
+    console.log('Token verification failed:', error instanceof Error ? error.message : 'Unknown error')
     return null
   }
 }
@@ -34,10 +41,17 @@ export function getTokenFromRequest(request: NextRequest): string | null {
 
 export async function getCurrentUser(request: NextRequest) {
   const token = getTokenFromRequest(request)
-  if (!token) return null
+  if (!token) {
+    console.log('No token found in request')
+    return null
+  }
   
   const payload = verifyToken(token)
-  if (!payload) return null
+  if (!payload) {
+    console.log('Token verification failed for token:', token.substring(0, 20) + '...')
+    return null
+  }
   
+  console.log('User authenticated successfully:', payload.userId)
   return payload.userId
 }

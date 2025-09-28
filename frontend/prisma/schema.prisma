@@ -24,6 +24,18 @@ model User {
   // Onboarding data
   onboarding OnboardingData?
   
+  // Tax-related data
+  taxCalculations TaxCalculation[]
+  taxOptimizations TaxOptimization[]
+  taxInputs TaxInput[]
+  
+  // CIBIL-related data
+  cibilAnalyses CibilAnalysis[]
+  cibilScenarios CibilScenario[]
+  
+  // Financial documents
+  financialDocuments FinancialDocument[]
+  
   @@map("users")
 }
 
@@ -69,4 +81,220 @@ model OnboardingData {
   updatedAt         DateTime @updatedAt
   
   @@map("onboarding_data")
+}
+
+// Tax Calculation Models
+model TaxCalculation {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String   @db.ObjectId
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Input Data
+  annualIncome      Float
+  investments80c    Float    @default(0)
+  healthInsurance   Float    @default(0)
+  homeLoanInterest  Float    @default(0)
+  hraClaimed        Float    @default(0)
+  otherDeductions   Json?    // Flexible JSON for additional deductions
+  
+  // Calculation Results
+  oldRegimeTax      Float
+  newRegimeTax      Float
+  recommendedRegime String   // "old_regime" or "new_regime"
+  potentialSavings  Float
+  effectiveRate     Float
+  
+  // Breakdown Data
+  deductionsUsed    Json?    // Detailed breakdown of deductions
+  taxBreakdown      Json?    // Tax slab calculations
+  
+  // Metadata
+  calculationDate   DateTime @default(now())
+  isOptimized       Boolean  @default(false)
+  notes             String?
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@map("tax_calculations")
+}
+
+model TaxOptimization {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String   @db.ObjectId
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // User Profile
+  age               Int
+  annualIncome      Float
+  existingInvestments Json?  // Current investment breakdown
+  riskAppetite      String?  // Conservative, Moderate, Aggressive
+  familySize        Int      @default(1)
+  cityTier          String?  // Metro, Tier1, Tier2
+  
+  // Optimization Results
+  recommendedRegime String
+  potentialSavings  Float
+  investmentPlan    Json     // Recommended investment allocation
+  timeline          String   // Implementation timeline
+  riskAssessment    String   // Risk level assessment
+  
+  // Action Plan
+  monthlyActionPlan String[] // Array of monthly action items
+  
+  // Metadata
+  optimizationDate  DateTime @default(now())
+  isActive          Boolean  @default(true)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@map("tax_optimizations")
+}
+
+// Tax Input Data Model (for form persistence)
+model TaxInput {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String   @db.ObjectId
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Input Data (matches form fields)
+  annualIncome      Float    @default(0)
+  hra               Float    @default(0)
+  section80C        Float    @default(0)
+  section80D        Float    @default(0)
+  homeLoanInterest  Float    @default(0)
+  otherDeductions   Float    @default(0)
+  
+  // Metadata
+  lastUpdated       DateTime @default(now())
+  isActive          Boolean  @default(true)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@map("tax_inputs")
+}
+
+// CIBIL Analysis Models
+model CibilAnalysis {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String   @db.ObjectId
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Input Data
+  currentScore      Int?
+  paymentHistory    String?  // Excellent, Good, Fair, Poor
+  creditCards       Int
+  totalCreditLimit  Float
+  currentUtilization Float
+  loans             Int
+  missedPayments    Int      @default(0)
+  accountAgeMonths  Int
+  recentInquiries   Int      @default(0)
+  age               Int?
+  income            Float?
+  
+  // Analysis Results
+  scoreCategory     String   // Excellent, Good, Fair, Poor
+  keyFactors        Json     // Detailed factor analysis
+  improvementAreas  String[] // Areas needing improvement
+  recommendations   String[] // Specific recommendations
+  
+  // Score Projections
+  scoreProjection3Months  Int?
+  scoreProjection6Months  Int?
+  scoreProjection12Months Int?
+  
+  // Metadata
+  analysisDate      DateTime @default(now())
+  isActive          Boolean  @default(true)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@map("cibil_analyses")
+}
+
+model CibilScenario {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String   @db.ObjectId
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Scenario Data
+  scenarios         Json     // Array of scenario objects
+  bestStrategy      String?  // Recommended best strategy
+  
+  // Results
+  scenarioResults   Json     // Detailed results for each scenario
+  
+  // Metadata
+  simulationDate    DateTime @default(now())
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@map("cibil_scenarios")
+}
+
+// Financial Document Models
+model FinancialDocument {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String   @db.ObjectId
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Document Info
+  fileName          String
+  fileType          String   // PDF, CSV, Excel, Image
+  fileSize          Int      // Size in bytes
+  mimeType          String
+  
+  // Storage
+  filePath          String?  // Server file path
+  fileData          String?  // Base64 encoded data (for small files)
+  
+  // Processing Results
+  documentType      String?  // bank_statement, salary_slip, form16, etc.
+  confidenceLevel   Float?   // AI confidence in extraction
+  extractedData     Json?    // Structured extracted data
+  isProcessed       Boolean  @default(false)
+  processingError   String?  // Error message if processing failed
+  
+  // Analysis Results
+  taxAnalysisReady  Boolean  @default(false)
+  cibilAnalysisReady Boolean @default(false)
+  financialSummary  Json?    // Extracted financial summary
+  
+  // Relations
+  analyses          DocumentAnalysis[]
+  
+  // Metadata
+  uploadDate        DateTime @default(now())
+  processedDate     DateTime?
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@map("financial_documents")
+}
+
+model DocumentAnalysis {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  documentId        String   @db.ObjectId
+  document          FinancialDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  
+  // Analysis Results
+  analysisType      String   // tax_analysis, cibil_analysis, general
+  analysisData      Json     // Detailed analysis results
+  confidenceLevel   Float
+  recommendations   String[] // AI-generated recommendations
+  
+  // Metadata
+  analysisDate      DateTime @default(now())
+  processingTime    Int?     // Processing time in milliseconds
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@map("document_analyses")
 }

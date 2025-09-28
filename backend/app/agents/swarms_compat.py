@@ -19,7 +19,7 @@ def create_agent():
         
         def create_groq_agent(agent_name: str, system_prompt: str, groq_api_key: str):
             model = GroqModel(
-                model_name="groq/llama-3.3-70b-versatile",
+                model_name="groq/llama-3.1-8b-instant",
                 groq_api_key=groq_api_key,
                 max_tokens=4000,
                 temperature=0.1
@@ -52,7 +52,7 @@ def create_agent():
                 agent = Agent(
                     agent_name=agent_name,
                     system_prompt=system_prompt,
-                    model_name="groq/llama-3.3-70b-versatile",
+                    model_name="groq/llama-3.1-8b-instant",
                     max_loops=1,
                     autosave=False,
                     verbose=True
@@ -82,7 +82,7 @@ def create_agent():
 class GroqAPIAgent:
     """Direct Groq API implementation as fallback"""
     
-    def _init_(self, agent_name: str, system_prompt: str, groq_api_key: str):
+    def __init__(self, agent_name: str, system_prompt: str, groq_api_key: str):
         self.agent_name = agent_name
         self.system_prompt = system_prompt
         self.groq_api_key = groq_api_key
@@ -98,7 +98,7 @@ class GroqAPIAgent:
         }
         
         data = {
-            "model": "llama3-8b-8192",
+            "model": "llama-3.1-8b-instant",
             "messages": [
                 {"role": "system", "content": self.system_prompt},
                 {"role": "user", "content": prompt}
@@ -113,8 +113,12 @@ class GroqAPIAgent:
                 result = response.json()
                 return result["choices"][0]["message"]["content"]
             else:
-                logger.error(f"Groq API error: {response.status_code}")
-                return f"API Error: {response.status_code}"
+                error_detail = response.text
+                logger.error(f"Groq API error: {response.status_code} - {error_detail}")
+                print(f"❌ Groq API error: {response.status_code}")
+                print(f"❌ Error details: {error_detail}")
+                return f"API Error: {response.status_code} - {error_detail}"
         except Exception as e:
             logger.error(f"Direct API call failed: {e}")
+            print(f"❌ API call exception: {e}")
             return f"Error: {str(e)}"
