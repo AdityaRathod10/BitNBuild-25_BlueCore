@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
 import { completeOnboardingSchema } from '@/lib/validations'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * @swagger
  * /api/onboarding:

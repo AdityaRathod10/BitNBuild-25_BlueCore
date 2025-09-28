@@ -4,6 +4,8 @@ import { getCurrentUser } from '@/lib/auth'
 import { getFileData, updateFileProcessingStatus, base64ToFile } from '@/lib/file-storage'
 import { z } from 'zod'
 
+export const dynamic = 'force-dynamic'
+
 // Validation schema for analysis request
 const analysisRequestSchema = z.object({
   documentId: z.string().min(1, 'Document ID is required'),
@@ -11,7 +13,7 @@ const analysisRequestSchema = z.object({
 })
 
 // Backend API base URL
-const BACKEND_API_BASE = process.env.BACKEND_API_BASE || 'http://localhost:8000'
+const BACKEND_API_BASE = process.env.BACKEND_URL || 'http://localhost:8000'
 
 export async function POST(request: NextRequest) {
   try {

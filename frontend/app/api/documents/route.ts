@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
 import { listFiles, deleteFile } from '@/lib/file-storage'
 
+export const dynamic = 'force-dynamic'
+
 // GET /api/documents - List all documents for a user
 export async function GET(request: NextRequest) {
   try {

@@ -3,8 +3,10 @@ import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
 import { z } from 'zod'
 
+export const dynamic = 'force-dynamic'
+
 // Backend API base URL
-const BACKEND_API_BASE = process.env.BACKEND_API_BASE || 'http://localhost:8000'
+const BACKEND_API_BASE = process.env.BACKEND_URL || 'http://localhost:8000'
 
 // Schema for tax calculation request
 const taxCalculationSchema = z.object({

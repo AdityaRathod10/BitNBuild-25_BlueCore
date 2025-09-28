@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
 import { z } from 'zod'
 
+export const dynamic = 'force-dynamic'
+
 // Schema for dashboard snapshot data
 const dashboardSnapshotSchema = z.object({
   financialSummary: z.object({

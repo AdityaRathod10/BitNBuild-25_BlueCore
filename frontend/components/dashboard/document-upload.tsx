@@ -136,14 +136,14 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
           <div className="flex items-center justify-center w-full">
             <label
               htmlFor="document-upload"
-              className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors"
+              className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-lg cursor-pointer bg-muted/30 hover:bg-muted/50 transition-colors"
             >
               <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                <FileText className="w-8 h-8 mb-4 text-gray-500" />
-                <p className="mb-2 text-sm text-gray-500">
+                <FileText className="w-8 h-8 mb-4 text-muted-foreground" />
+                <p className="mb-2 text-sm text-muted-foreground">
                   <span className="font-semibold">Click to upload</span> or drag and drop
                 </p>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   PDF, CSV, Excel, PNG, JPG (MAX. 10MB)
                 </p>
               </div>
@@ -160,7 +160,7 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
 
           {uploadStatus === 'uploading' && (
             <div className="space-y-2">
-              <div className="flex justify-between text-sm text-gray-600">
+              <div className="flex justify-between text-sm text-muted-foreground">
                 <span>Processing...</span>
                 <span>{uploadProgress}%</span>
               </div>
@@ -170,18 +170,18 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
 
           <div className="text-center">
             <p className={`text-sm ${
-              uploadStatus === 'success' ? 'text-green-600' :
-              uploadStatus === 'error' ? 'text-red-600' :
-              'text-gray-600'
+              uploadStatus === 'success' ? 'text-green-600 dark:text-green-400' :
+              uploadStatus === 'error' ? 'text-red-600 dark:text-red-400' :
+              'text-muted-foreground'
             }`}>
               {getStatusMessage()}
             </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+        <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
           <div>
-            <h4 className="font-medium mb-2">Supported Formats:</h4>
+            <h4 className="font-medium mb-2 text-foreground">Supported Formats:</h4>
             <ul className="space-y-1">
               <li>• Bank Statements (PDF)</li>
               <li>• Salary Slips (PDF/Image)</li>
@@ -191,7 +191,7 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
             </ul>
           </div>
           <div>
-            <h4 className="font-medium mb-2">What We Extract:</h4>
+            <h4 className="font-medium mb-2 text-foreground">What We Extract:</h4>
             <ul className="space-y-1">
               <li>• Income & Expenses</li>
               <li>• Tax Deductions</li>

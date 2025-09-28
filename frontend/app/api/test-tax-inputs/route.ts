@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+export const dynamic = 'force-dynamic'
+
 // GET /api/test-tax-inputs - Test endpoint to verify database connection
 export async function GET(request: NextRequest) {
   try {

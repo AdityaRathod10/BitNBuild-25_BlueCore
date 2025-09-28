@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
 import { z } from 'zod'
 
+export const dynamic = 'force-dynamic'
+
 // Schema for updating financial information
 const financialInfoSchema = z.object({
   annualIncome: z.string().optional(),

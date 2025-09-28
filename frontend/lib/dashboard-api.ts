@@ -2,7 +2,7 @@
 import { cookieUtils } from './cookies'
 import { ProcessedUserData } from '../contexts/UserDataContext'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+const API_BASE_URL = process.env.BACKEND_URL || 'http://localhost:8000'
 const FRONTEND_API_URL = process.env.NEXT_PUBLIC_FRONTEND_API_URL || ''
 
 export interface DashboardData {
@@ -153,7 +153,7 @@ export class DashboardAPI {
   // Health check for all agents
   static async getAgentHealth() {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/health`)
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_BASE}/api/health`)
       const data = await response.json()
       
       return {

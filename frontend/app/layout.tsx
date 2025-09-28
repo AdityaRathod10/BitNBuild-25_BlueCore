@@ -9,6 +9,7 @@ import { AuthProvider } from "@/contexts/AuthContext"
 import { UserDataProvider } from "@/contexts/UserDataContext"
 import { ToastProvider } from "@/components/ui/toast-provider"
 import { ChatToggleButton } from "@/components/chatbot/chat-toggle-button"
+import { ThemeProvider } from "@/components/theme-provider"
 import "./globals.css"
 
 const inter = Inter({
@@ -29,18 +30,20 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${GeistMono.variable}`}>
+    <html lang="en" className={`${inter.variable} ${GeistMono.variable}`} suppressHydrationWarning>
       <body className="font-sans antialiased">
-        <AuthProvider>
-          <UserDataProvider>
-            <ToastProvider>
-              <MainNav />
-              <Suspense fallback={null}>{children}</Suspense>
-              <ChatToggleButton />
-              <Analytics />
-            </ToastProvider>
-          </UserDataProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <UserDataProvider>
+              <ToastProvider>
+                <MainNav />
+                <Suspense fallback={null}>{children}</Suspense>
+                <ChatToggleButton />
+                <Analytics />
+              </ToastProvider>
+            </UserDataProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

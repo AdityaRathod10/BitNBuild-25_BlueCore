@@ -3,6 +3,8 @@ import { getCurrentUser } from '@/lib/auth'
 import { storeFile, validateFile } from '@/lib/file-storage'
 import { z } from 'zod'
 
+export const dynamic = 'force-dynamic'
+
 // Validation schema for file upload
 const fileUploadSchema = z.object({
   fileName: z.string().min(1, 'File name is required'),

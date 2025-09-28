@@ -413,11 +413,11 @@ export function CibilDashboard() {
       <div className="space-y-8 max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center space-y-6">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full shadow-lg">
-            <CreditCard className="h-10 w-10 text-white" />
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-primary rounded-full shadow-lg">
+            <CreditCard className="h-10 w-10 text-primary-foreground" />
           </div>
           <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            <h1 className="text-4xl font-bold text-foreground">
               CIBIL AI Analysis Suite
             </h1>
             <p className="text-muted-foreground text-xl max-w-2xl mx-auto mt-3">
@@ -425,15 +425,15 @@ export function CibilDashboard() {
             </p>
           </div>
           <div className="flex justify-center space-x-4">
-            <Badge variant="outline" className="text-blue-600 border-blue-200">
+            <Badge variant="outline">
               <Star className="h-3 w-3 mr-1" />
               Real-time AI Analysis
             </Badge>
-            <Badge variant="outline" className="text-green-600 border-green-200">
+            <Badge variant="outline">
               <Target className="h-3 w-3 mr-1" />
               Personalized Reports
             </Badge>
-            <Badge variant="outline" className="text-purple-600 border-purple-200">
+            <Badge variant="outline">
               <BarChart3 className="h-3 w-3 mr-1" />
               Scenario Simulations
             </Badge>
@@ -442,21 +442,21 @@ export function CibilDashboard() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* API 1: CIBIL Score Analysis */}
-          <Card className="border-l-4 border-l-blue-500 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-            <CardHeader className="bg-gradient-to-r from-blue-50 to-blue-100">
+          <Card className="border-l-4 border-l-primary hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+            <CardHeader className="bg-muted/30">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-blue-500 rounded-lg">
-                    <CreditCard className="h-6 w-6 text-white" />
+                  <div className="p-2 bg-primary rounded-lg">
+                    <CreditCard className="h-6 w-6 text-primary-foreground" />
                   </div>
                   <div>
-                    <CardTitle className="text-blue-800">CIBIL Score Analysis</CardTitle>
-                    <CardDescription className="text-blue-600">
+                    <CardTitle className="text-foreground">CIBIL Score Analysis</CardTitle>
+                    <CardDescription className="text-muted-foreground">
                       AI-powered factor breakdown & insights
                     </CardDescription>
                   </div>
                 </div>
-                <Badge className="bg-blue-500 text-white">Live AI</Badge>
+                <Badge className="bg-primary text-primary-foreground">Live AI</Badge>
               </div>
             </CardHeader>
             <CardContent className="space-y-6 p-6">
@@ -532,7 +532,7 @@ export function CibilDashboard() {
 
               <Button 
                 onClick={callAnalyzeAPI} 
-                className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg" 
+                className="w-full bg-primary hover:bg-primary/90 shadow-lg" 
                 size="lg"
                 disabled={loading === 'analysis'}
               >
@@ -553,21 +553,21 @@ export function CibilDashboard() {
           </Card>
 
           {/* API 2: Detailed Report */}
-          <Card className="border-l-4 border-l-green-500 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-            <CardHeader className="bg-gradient-to-r from-green-50 to-green-100">
+          <Card className="border-l-4 border-l-primary hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+            <CardHeader className="bg-muted/30">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-green-500 rounded-lg">
-                    <FileText className="h-6 w-6 text-white" />
+                  <div className="p-2 bg-primary rounded-lg">
+                    <FileText className="h-6 w-6 text-primary-foreground" />
                   </div>
                   <div>
-                    <CardTitle className="text-green-800">90-Day Action Plan</CardTitle>
-                    <CardDescription className="text-green-600">
+                    <CardTitle className="text-foreground">90-Day Action Plan</CardTitle>
+                    <CardDescription className="text-muted-foreground">
                       Personalized improvement roadmap
                     </CardDescription>
                   </div>
                 </div>
-                <Badge className="bg-green-500 text-white">Strategic</Badge>
+                <Badge className="bg-primary text-primary-foreground">Strategic</Badge>
               </div>
             </CardHeader>
             <CardContent className="space-y-6 p-6">
@@ -630,7 +630,7 @@ export function CibilDashboard() {
 
               <Button 
                 onClick={callReportAPI} 
-                className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 shadow-lg" 
+                className="w-full bg-primary hover:bg-primary/90 shadow-lg" 
                 size="lg"
                 disabled={loading === 'report'}
               >
@@ -651,28 +651,28 @@ export function CibilDashboard() {
           </Card>
 
           {/* API 3: Scenario Analysis */}
-          <Card className="border-l-4 border-l-orange-500 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-            <CardHeader className="bg-gradient-to-r from-orange-50 to-orange-100">
+          <Card className="border-l-4 border-l-primary hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+            <CardHeader className="bg-muted/30">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-orange-500 rounded-lg">
-                    <TrendingUp className="h-6 w-6 text-white" />
+                  <div className="p-2 bg-primary rounded-lg">
+                    <TrendingUp className="h-6 w-6 text-primary-foreground" />
                   </div>
                   <div>
-                    <CardTitle className="text-orange-800">Scenario Simulator</CardTitle>
-                    <CardDescription className="text-orange-600">
+                    <CardTitle className="text-foreground">Scenario Simulator</CardTitle>
+                    <CardDescription className="text-muted-foreground">
                       Impact prediction of financial actions
                     </CardDescription>
                   </div>
                 </div>
-                <Badge className="bg-orange-500 text-white">Predictive</Badge>
+                <Badge className="bg-primary text-primary-foreground">Predictive</Badge>
               </div>
             </CardHeader>
             <CardContent className="space-y-6 p-6">
               {scenarios.map((scenario, index) => (
-                <div key={index} className="p-4 border rounded-lg space-y-3 bg-gradient-to-r from-orange-25 to-yellow-25">
+                <div key={index} className="p-4 border rounded-lg space-y-3 bg-muted/20">
                   <div className="flex justify-between items-center">
-                    <Label className="text-sm font-medium text-orange-700">Scenario {index + 1}</Label>
+                    <Label className="text-sm font-medium text-foreground">Scenario {index + 1}</Label>
                     {scenarios.length > 1 && (
                       <Button variant="outline" size="sm" onClick={() => removeScenario(index)}>
                         <Minus className="h-4 w-4" />
@@ -724,14 +724,14 @@ export function CibilDashboard() {
                 </div>
               ))}
 
-              <Button variant="outline" onClick={addScenario} className="w-full border-orange-200">
+              <Button variant="outline" onClick={addScenario} className="w-full">
                 <Plus className="mr-2 h-4 w-4" />
                 Add Scenario
               </Button>
 
               <Button 
                 onClick={callScenarioAPI} 
-                className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 shadow-lg" 
+                className="w-full bg-primary hover:bg-primary/90 shadow-lg" 
                 size="lg"
                 disabled={loading === 'scenarios'}
               >
@@ -784,16 +784,16 @@ export function CibilDashboard() {
         </div>
 
         {/* Score Overview - COMPLETELY DYNAMIC */}
-        <Card className="border-l-4 border-l-blue-500 shadow-lg">
-          <CardHeader className="bg-gradient-to-r from-blue-50 to-blue-100">
+        <Card className="border-l-4 border-l-primary shadow-lg">
+          <CardHeader className="bg-muted/30">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <div className="p-3 bg-blue-500 rounded-full">
-                  <CreditCard className="h-8 w-8 text-white" />
+                <div className="p-3 bg-primary rounded-full">
+                  <CreditCard className="h-8 w-8 text-primary-foreground" />
                 </div>
                 <div>
-                  <CardTitle className="text-2xl text-blue-800">CIBIL Score Analysis</CardTitle>
-                  <CardDescription className="text-blue-600">
+                  <CardTitle className="text-2xl text-foreground">CIBIL Score Analysis</CardTitle>
+                  <CardDescription className="text-muted-foreground">
                     Real-time analysis for score {parsedAnalysis.currentScore}
                   </CardDescription>
                 </div>
@@ -849,12 +849,12 @@ export function CibilDashboard() {
                             <div className={`text-2xl font-bold ${getScoreColor(parsedAnalysis.currentScore)}`}>
                               {parsedAnalysis.currentScore}
                             </div>
-                            <div className="text-xs text-gray-500">/ 900</div>
+                            <div className="text-xs text-muted-foreground">/ 900</div>
                           </div>
                         </div>
                       </div>
                       <h3 className="font-semibold">Current Score</h3>
-                      <p className="text-sm text-gray-600">{parsedAnalysis.riskProfile}</p>
+                      <p className="text-sm text-muted-foreground">{parsedAnalysis.riskProfile}</p>
                     </CardContent>
                   </Card>
 
@@ -883,7 +883,7 @@ export function CibilDashboard() {
                           <Progress value={parsedAnalysis.creditUtilization.target} className="h-2" />
                         </div>
                       </div>
-                      <p className="text-xs text-gray-600 mt-2">
+                      <p className="text-xs text-muted-foreground mt-2">
                         {parsedAnalysis.creditUtilization.impact}
                       </p>
                     </CardContent>

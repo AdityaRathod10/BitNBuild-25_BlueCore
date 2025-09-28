@@ -118,7 +118,7 @@ export function AICopilotChat({ isOpen, onToggle, className = '' }: AICopilotCha
 
     try {
       // Direct call to FastAPI backend
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_API_BASE || 'http://localhost:8000'
+      const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000'
       const response = await fetch(`${backendUrl}/api/chatbot/chat`, {
         method: 'POST',
         headers: {

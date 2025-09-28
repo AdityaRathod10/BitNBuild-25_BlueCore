@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { ThemeSwitcher } from "@/components/theme-switcher"
 import {
   LayoutDashboard,
   Calculator,
@@ -143,6 +144,9 @@ export function MainNav() {
 
         {/* Right Side Actions */}
         <div className="flex items-center space-x-2">
+          {/* Theme Switcher - Always visible */}
+          <ThemeSwitcher />
+
           {isLandingPage ? (
             // Landing page actions
             <>
@@ -252,6 +256,11 @@ export function MainNav() {
                 {/* Mobile User Actions */}
                 <div className="pt-4 border-t border-border/50">
                   <div className="flex flex-col space-y-2">
+                    {/* Theme Switcher for Mobile */}
+                    <div className="px-4 py-2">
+                      <ThemeSwitcher />
+                    </div>
+                    
                     {isLandingPage ? (
                       // Landing page mobile actions
                       <>

@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
 import { z } from 'zod'
 
+export const dynamic = 'force-dynamic'
+
 // Validation schema for identity documents
 const identityUpdateSchema = z.object({
   panCard: z.string().optional(),

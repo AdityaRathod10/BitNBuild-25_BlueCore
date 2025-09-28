@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma'
 import { registerSchema } from '@/lib/validations'
 import { hashPassword, generateToken } from '@/lib/auth'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * @swagger
  * /api/auth/register:

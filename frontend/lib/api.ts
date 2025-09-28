@@ -1,7 +1,7 @@
 import { cookieUtils } from './cookies'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api'
-const API_BASE = 'http://localhost:8000'
+const API_BASE = process.env.BACKEND_URL || 'http://localhost:8000'
 
 // Global auth error handler
 let globalAuthErrorHandler: (() => void) | null = null
@@ -1306,7 +1306,7 @@ function fileToBase64(file: File): Promise<string> {
 // Health Check API
 export const healthApi = {
   checkHealth: async () => {
-    const response = await fetch(`${API_BASE}/api/health`)
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_BASE}/api/health`)
     
     if (!response.ok) {
       const error = await response.json()
@@ -1317,7 +1317,7 @@ export const healthApi = {
   },
 
   testAgents: async () => {
-    const response = await fetch(`${API_BASE}/api/test-agents`)
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_BASE}/api/test-agents`)
     
     if (!response.ok) {
       const error = await response.json()

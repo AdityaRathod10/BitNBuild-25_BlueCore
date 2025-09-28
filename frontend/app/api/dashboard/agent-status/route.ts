@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/auth'
 import { z } from 'zod'
 
+export const dynamic = 'force-dynamic'
+
 // Schema for agent status data
 const agentStatusSchema = z.object({
   agentName: z.enum(['tax_agent', 'cibil_agent', 'data_ingestion_agent']),
