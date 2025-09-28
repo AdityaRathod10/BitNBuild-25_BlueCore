@@ -11,10 +11,7 @@ import {
   LayoutDashboard,
   Calculator,
   CreditCard,
-  TrendingUp,
-  PiggyBank,
   Target,
-  Shield,
   FileText,
   Bot,
   User,
@@ -37,16 +34,6 @@ const mainNavItems = [
     icon: FileText,
   },
   {
-    title: "Investments",
-    href: "/investments",
-    icon: TrendingUp,
-  },
-  {
-    title: "Budgeting",
-    href: "/budgeting",
-    icon: PiggyBank,
-  },
-  {
     title: "Tax Center",
     href: "/tax-center",
     icon: Calculator,
@@ -60,16 +47,6 @@ const mainNavItems = [
     title: "Financial Goals",
     href: "/financial-goals",
     icon: Target,
-  },
-  {
-    title: "Insurance",
-    href: "/insurance",
-    icon: Shield,
-  },
-  {
-    title: "Reports",
-    href: "/reports",
-    icon: FileText,
   },
 ]
 
