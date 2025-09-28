@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Bot, Send, User, Sparkles, TrendingUp, Calculator, PiggyBank, Shield, Lightbulb, ArrowDown, Copy, RotateCcw } from "lucide-react"
 import { AuthGuard } from "@/components/AuthGuard"
+import { MarkdownRenderer } from "@/components/ui/markdown-renderer"
 
 interface Message {
   id: string
@@ -27,17 +28,7 @@ const quickActions = [
   { icon: Shield, label: "Insurance Review", query: "Review my insurance coverage and suggest improvements" },
 ]
 
-const aiResponses = {
-  tax: "Based on your current income of ₹12,00,000, I recommend maximizing your 80C deductions by investing ₹1,50,000 in ELSS funds. You can save approximately ₹46,800 in taxes by switching to the new tax regime and claiming HRA exemption. Consider investing in NPS for additional ₹50,000 deduction under 80CCD(1B).",
-  investment:
-    "Given your moderate risk profile and 10-year investment horizon, I suggest a balanced portfolio: 60% equity (₹3,60,000 in diversified mutual funds), 30% debt (₹1,80,000 in corporate bonds), and 10% gold (₹60,000 in gold ETFs). This allocation can potentially generate 12-14% annual returns.",
-  budget:
-    "Your spending analysis shows 35% on essentials, 25% on lifestyle, and 40% savings - excellent! However, I notice ₹8,000 monthly on dining out. Reducing this by 30% could save ₹28,800 annually. Consider automating investments to maintain your savings discipline.",
-  insurance:
-    "Your current life insurance coverage of ₹50,00,000 is adequate, but I recommend increasing health insurance from ₹5,00,000 to ₹10,00,000 given rising medical costs. Consider a top-up plan for cost-effective additional coverage. Your motor insurance is due for renewal in 2 months.",
-  default:
-    "I'm your AI financial co-pilot! I can help you with tax optimization, investment planning, budget analysis, insurance reviews, and personalized financial advice. What would you like to explore today?",
-}
+// Removed hardcoded responses - now using backend API
 
 export default function AICopilotPage() {
   const [messages, setMessages] = useState<Message[]>([
@@ -45,7 +36,7 @@ export default function AICopilotPage() {
       id: "1",
       type: "ai",
       content:
-        "Hello! I'm your AI financial co-pilot. I'm here to help you optimize your taxes, plan investments, analyze spending, and achieve your financial goals. How can I assist you today?",
+        "Hello! I'm your TaxWise AI Copilot. I can help you with tax optimization, CIBIL analysis, document processing, and financial planning. What would you like to know?",
       timestamp: new Date(),
       suggestions: ["Tax Optimization", "Investment Planning", "Budget Review", "Insurance Analysis"],
     },
@@ -83,22 +74,32 @@ export default function AICopilotPage() {
     return () => scrollContainer.removeEventListener('scroll', handleScroll)
   }, [])
 
-  const getAIResponse = (query: string): string => {
-    const lowerQuery = query.toLowerCase()
-    if (lowerQuery.includes("tax") || lowerQuery.includes("deduction") || lowerQuery.includes("80c")) {
-      return aiResponses.tax
-    } else if (
-      lowerQuery.includes("invest") ||
-      lowerQuery.includes("mutual fund") ||
-      lowerQuery.includes("portfolio")
-    ) {
-      return aiResponses.investment
-    } else if (lowerQuery.includes("budget") || lowerQuery.includes("spending") || lowerQuery.includes("expense")) {
-      return aiResponses.budget
-    } else if (lowerQuery.includes("insurance") || lowerQuery.includes("coverage") || lowerQuery.includes("health")) {
-      return aiResponses.insurance
-    } else {
-      return aiResponses.default
+  const getAIResponse = async (query: string): Promise<string> => {
+    try {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_API_BASE || 'http://localhost:8000'
+      const response = await fetch(`${backendUrl}/api/chatbot/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: query,
+          user_id: 'user-123', // You can get this from auth context
+          context: null, // Add user context if available
+          session_id: 'main-session'
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.detail || `HTTP error! status: ${response.status}`)
+      }
+
+      const data = await response.json()
+      return data.response
+    } catch (error) {
+      console.error('Error calling backend API:', error)
+      return "I apologize, but I'm having trouble connecting to the AI service right now. Please try again in a moment."
     }
   }
 
@@ -116,19 +117,32 @@ export default function AICopilotPage() {
     setInputValue("")
     setIsTyping(true)
 
-    // Simulate AI thinking time
-    await new Promise((resolve) => setTimeout(resolve, 1500))
+    try {
+      // Get AI response from backend
+      const aiResponseText = await getAIResponse(message)
+      
+      const aiResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        type: "ai",
+        content: aiResponseText,
+        timestamp: new Date(),
+        suggestions: ["Tell me more", "Show calculations", "Alternative options", "Next steps"],
+      }
 
-    const aiResponse: Message = {
-      id: (Date.now() + 1).toString(),
-      type: "ai",
-      content: getAIResponse(message),
-      timestamp: new Date(),
-      suggestions: ["Tell me more", "Show calculations", "Alternative options", "Next steps"],
+      setMessages((prev) => [...prev, aiResponse])
+    } catch (error) {
+      console.error('Error getting AI response:', error)
+      const errorResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        type: "ai",
+        content: "I apologize, but I'm having trouble processing your request right now. Please try again.",
+        timestamp: new Date(),
+        suggestions: ["Try again", "Ask something else"],
+      }
+      setMessages((prev) => [...prev, errorResponse])
+    } finally {
+      setIsTyping(false)
     }
-
-    setMessages((prev) => [...prev, aiResponse])
-    setIsTyping(false)
   }
 
   const handleQuickAction = (query: string) => {
@@ -152,7 +166,7 @@ export default function AICopilotPage() {
         id: "1",
         type: "ai",
         content:
-          "Hello! I'm your AI financial co-pilot. I'm here to help you optimize your taxes, plan investments, analyze spending, and achieve your financial goals. How can I assist you today?",
+          "Hello! I'm your TaxWise AI Copilot. I can help you with tax optimization, CIBIL analysis, document processing, and financial planning. What would you like to know?",
         timestamp: new Date(),
         suggestions: ["Tax Optimization", "Investment Planning", "Budget Review", "Insurance Analysis"],
       },
@@ -228,7 +242,7 @@ export default function AICopilotPage() {
 
         {/* Chat Interface */}
         <div className="xl:col-span-3">
-          <Card className="h-[600px] flex flex-col shadow-sm overflow-hidden">
+          <Card className="h-[830px] flex flex-col shadow-sm overflow-hidden">
             <CardHeader className="flex-shrink-0 border-b bg-muted/30 px-6 py-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
@@ -284,7 +298,11 @@ export default function AICopilotPage() {
                               : "bg-muted border shadow-sm"
                           }`}
                         >
-                          <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                          {message.type === "ai" ? (
+                            <MarkdownRenderer content={message.content} />
+                          ) : (
+                            <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                          )}
                         </div>
                         {message.suggestions && message.type === "ai" && (
                           <div className="flex flex-wrap gap-2 mt-3">

@@ -36,6 +36,12 @@ model User {
   // Financial documents
   financialDocuments FinancialDocument[]
   
+  // Dashboard data
+  dashboardSnapshots DashboardSnapshot[]
+  
+  // Processed user data
+  processedUserData ProcessedUserData[]
+  
   @@map("users")
 }
 
@@ -278,6 +284,75 @@ model FinancialDocument {
   @@map("financial_documents")
 }
 
+// Dashboard Data Models
+model DashboardSnapshot {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String   @db.ObjectId
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Financial Overview
+  totalIncome       Float
+  totalExpenses     Float
+  netWorth          Float
+  monthlySavings    Float
+  savingsRate       Float
+  
+  // Tax Data
+  currentTaxLiability Float
+  potentialSavings    Float
+  recommendedRegime   String
+  
+  // CIBIL Data
+  currentCibilScore   Int
+  creditUtilization   Float
+  paymentHistory      String
+  
+  // Investment Data
+  totalInvestments    Float
+  investmentGrowth    Float
+  portfolioValue      Float
+  
+  // Goals Progress
+  emergencyFundProgress Float
+  retirementProgress    Float
+  otherGoalsProgress    Json?
+  
+  // Metadata
+  snapshotDate      DateTime @default(now())
+  isActive          Boolean  @default(true)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@map("dashboard_snapshots")
+}
+
+// Agent Status Tracking
+model AgentStatus {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  
+  // Agent Info
+  agentName         String   // tax_agent, cibil_agent, data_ingestion_agent
+  status            String   // active, error, disabled
+  lastHealthCheck   DateTime
+  responseTime      Int?     // in milliseconds
+  errorMessage      String?
+  
+  // Performance Metrics
+  totalRequests     Int      @default(0)
+  successfulRequests Int     @default(0)
+  failedRequests    Int      @default(0)
+  
+  // Configuration
+  isEnabled         Boolean  @default(true)
+  apiKeyConfigured  Boolean  @default(false)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@map("agent_status")
+}
+
 model DocumentAnalysis {
   id                String   @id @default(auto()) @map("_id") @db.ObjectId
   documentId        String   @db.ObjectId
@@ -297,4 +372,34 @@ model DocumentAnalysis {
   updatedAt         DateTime @updatedAt
   
   @@map("document_analyses")
+}
+
+model ProcessedUserData {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String   @db.ObjectId
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Financial Summary
+  financialSummary  Json     // { totalIncome, totalExpenses, netWorth, monthlySavings, savingsRate }
+  
+  // Tax Data
+  taxData           Json     // { currentTaxLiability, potentialSavings, recommendedRegime, investments80c, etc. }
+  
+  // CIBIL Data
+  cibilData         Json     // { currentScore, scoreCategory, creditUtilization, paymentHistory, etc. }
+  
+  // Document Data
+  documentData      Json     // { totalDocuments, processedDocuments, documentTypes, recentDocuments }
+  
+  // Analysis Readiness
+  analysisReadiness Json     // { taxAnalysisReady, cibilAnalysisReady, dataCompleteness }
+  
+  // Metadata
+  lastProcessed     DateTime
+  source            String   // uploaded, manual, api
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@map("processed_user_data")
 }

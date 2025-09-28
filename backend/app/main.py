@@ -17,6 +17,9 @@ from app.agents.tax_calculation_agent import TaxCalculationAgent
 from app.agents.cibil_analysis_agent import CibilAnalysisAgent
 from app.agents.data_ingestion_agent import DataIngestionAgent
 
+# Import chatbot API
+from app.chatbot_api import router as chatbot_router
+
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -40,6 +43,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include chatbot router
+app.include_router(chatbot_router)
 
 # Pydantic models for API requests
 

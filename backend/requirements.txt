@@ -21,3 +21,7 @@ pdfplumber
 google-generativeai
 scikit-learn
 faker
+orjson
+swarm-models
+swarm_models
+langchain_community

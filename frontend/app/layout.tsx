@@ -6,7 +6,9 @@ import { Analytics } from "@vercel/analytics/next"
 import { Suspense } from "react"
 import { MainNav } from "@/components/navigation/main-nav"
 import { AuthProvider } from "@/contexts/AuthContext"
+import { UserDataProvider } from "@/contexts/UserDataContext"
 import { ToastProvider } from "@/components/ui/toast-provider"
+import { ChatToggleButton } from "@/components/chatbot/chat-toggle-button"
 import "./globals.css"
 
 const inter = Inter({
@@ -30,11 +32,14 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} ${GeistMono.variable}`}>
       <body className="font-sans antialiased">
         <AuthProvider>
-          <ToastProvider>
-            <MainNav />
-            <Suspense fallback={null}>{children}</Suspense>
-            <Analytics />
-          </ToastProvider>
+          <UserDataProvider>
+            <ToastProvider>
+              <MainNav />
+              <Suspense fallback={null}>{children}</Suspense>
+              <ChatToggleButton />
+              <Analytics />
+            </ToastProvider>
+          </UserDataProvider>
         </AuthProvider>
       </body>
     </html>
