@@ -1,4 +1,4 @@
-const BASE_URL = 'http://127.0.0.1:8000'
+const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_API_BASE || 'http://localhost:8000'
 
 export interface CibilAnalysisRequest {
   current_score?: number

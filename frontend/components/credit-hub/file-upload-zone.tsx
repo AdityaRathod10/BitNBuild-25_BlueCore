@@ -31,7 +31,7 @@ export function FileUploadZone({ onFileAnalyzed, onBack }: FileUploadZoneProps) 
       
       setProgress(30)
       
-      const response = await fetch('http://127.0.0.1:8000/api/analyze-financial-data', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_BASE}/api/analyze-financial-data`, {
         method: 'POST',
         body: formData,
       })
@@ -48,7 +48,7 @@ export function FileUploadZone({ onFileAnalyzed, onBack }: FileUploadZoneProps) 
       // Check if CIBIL analysis is possible
       if (result.financial_summary?.ready_for_cibil_analysis) {
         // Perform CIBIL analysis
-        const cibilResponse = await fetch('http://127.0.0.1:8000/api/analyze-cibil', {
+        const cibilResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_BASE}/api/analyze-cibil`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(result.cibil_agent_format),

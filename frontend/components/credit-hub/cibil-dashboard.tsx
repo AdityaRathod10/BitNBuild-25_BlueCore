@@ -283,7 +283,7 @@ export function CibilDashboard() {
     try {
       console.log('🚀 Sending FRESH analysis request for score:', analysisForm.current_score)
       
-      const response = await fetch('http://127.0.0.1:8000/api/analyze-cibil', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_BASE}/api/analyze-cibil`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(analysisForm)
@@ -315,7 +315,7 @@ export function CibilDashboard() {
     try {
       console.log('🚀 Sending FRESH report request for score:', reportForm.current_score)
       
-      const response = await fetch('http://127.0.0.1:8000/api/cibil-report', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_BASE}/api/cibil-report`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(reportForm)
@@ -342,7 +342,7 @@ export function CibilDashboard() {
     try {
       console.log('🚀 Sending FRESH scenario request:', scenarios.length, 'scenarios')
       
-      const response = await fetch('http://127.0.0.1:8000/api/cibil-scenarios', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_BASE}/api/cibil-scenarios`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ scenarios })
