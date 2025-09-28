@@ -1,5 +1,5 @@
 """
-Windows-compatible Swarms wrapper
+Windows-compatible Swarms wrapper with Groq OpenAI-compatible API
 """
 
 import os
@@ -10,39 +10,33 @@ logger = logging.getLogger(__name__)
 
 # Try different import strategies
 def create_agent():
-    """Create a Swarms agent with Windows compatibility"""
+    """Create a Swarms agent with Windows compatibility using Groq OpenAI-compatible API"""
     
     try:
-        # Strategy 1: Try standard import
+        # Strategy 1: Try standard import with Groq OpenAI-compatible API
         from swarms.structs.agent import Agent
-        from swarms.models import GroqModel
         
         def create_groq_agent(agent_name: str, system_prompt: str, groq_api_key: str):
-            model = GroqModel(
-                model_name="groq/llama-3.1-8b-instant",
-                groq_api_key=groq_api_key,
-                max_tokens=4000,
-                temperature=0.1
-            )
-            
             agent = Agent(
                 agent_name=agent_name,
                 system_prompt=system_prompt,
-                llm=model,
+                model_name="groq/llama-3.3-70b-versatile",
                 max_loops=1,
                 autosave=False,
-                verbose=True
+                verbose=True,
+                max_tokens=4000,
+                temperature=0.1
             )
             return agent
         
-        logger.info("✅ Swarms imported successfully with GroqModel")
+        logger.info("✅ Swarms imported successfully with Groq OpenAI-compatible API")
         return create_groq_agent, True
         
     except Exception as e1:
-        logger.warning(f"GroqModel failed: {e1}")
+        logger.warning(f"Groq OpenAI-compatible API failed: {e1}")
         
         try:
-            # Strategy 2: Try with OpenAI-compatible model
+            # Strategy 2: Try with environment variable approach
             from swarms.structs.agent import Agent
             
             def create_simple_agent(agent_name: str, system_prompt: str, groq_api_key: str):
@@ -52,21 +46,23 @@ def create_agent():
                 agent = Agent(
                     agent_name=agent_name,
                     system_prompt=system_prompt,
-                    model_name="groq/llama-3.1-8b-instant",
+                    model_name="groq/llama-3.3-70b-versatile",
                     max_loops=1,
                     autosave=False,
-                    verbose=True
+                    verbose=True,
+                    max_tokens=4000,
+                    temperature=0.1
                 )
                 return agent
             
-            logger.info("✅ Swarms imported with simple Agent")
+            logger.info("✅ Swarms imported with simple Agent using Groq")
             return create_simple_agent, True
             
         except Exception as e2:
             logger.warning(f"Simple Agent failed: {e2}")
             
             try:
-                # Strategy 3: Direct API call fallback
+                # Strategy 3: Direct Groq API call fallback
                 import requests
                 
                 def create_api_agent(agent_name: str, system_prompt: str, groq_api_key: str):
@@ -98,7 +94,7 @@ class GroqAPIAgent:
         }
         
         data = {
-            "model": "llama-3.1-8b-instant",
+            "model": "llama-3.3-70b-versatile",
             "messages": [
                 {"role": "system", "content": self.system_prompt},
                 {"role": "user", "content": prompt}

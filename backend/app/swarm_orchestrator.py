@@ -1,6 +1,7 @@
 """
 Swarm Orchestrator for TaxWise AI - Master Chatbot Assistant
 Integrates all existing agents (Tax, CIBIL, Data Ingestion) using Swarm framework
+Uses Groq's OpenAI-compatible API for cost-effective and fast inference
 """
 
 import os
@@ -13,6 +14,7 @@ import logging
 from swarms import Agent, GroupChat
 from swarms.structs.conversation import Conversation
 from swarms.structs.multi_agent_exec import run_agents_concurrently
+from groq import Groq
 
 # Import existing agents
 from app.agents.tax_calculation_agent import TaxCalculationAgent
@@ -34,7 +36,13 @@ class TaxWiseSwarmOrchestrator:
         self.cibil_agent = CibilAnalysisAgent()
         self.data_ingestion_agent = DataIngestionAgent()
         
-        # Initialize Swarm agents
+        # Initialize Groq client
+        self.groq_client = Groq(
+            api_key=os.getenv("GROQ_API_KEY"),
+            base_url="https://api.groq.com/openai/v1"
+        )
+        
+        # Initialize Swarm agents with Groq
         self.swarm_agents = self._initialize_swarm_agents()
         
         # Create conversation manager
@@ -53,7 +61,7 @@ class TaxWiseSwarmOrchestrator:
             max_loops=10
         )
         
-        logger.info("✅ TaxWise Swarm Orchestrator initialized successfully")
+        logger.info("✅ TaxWise Swarm Orchestrator initialized successfully with Groq API")
     
     def _initialize_swarm_agents(self) -> Dict[str, Agent]:
         """Initialize specialized Swarm agents for different financial domains"""
@@ -72,7 +80,7 @@ class TaxWiseSwarmOrchestrator:
             - Form 16 and tax filing guidance
             
             Always provide accurate, actionable tax advice based on user's financial data.""",
-            model_name="gpt-4o-mini",
+            model_name="groq/llama-3.3-70b-versatile",
             max_loops=3,
             temperature=0.3,
             max_tokens=2000
@@ -91,7 +99,7 @@ class TaxWiseSwarmOrchestrator:
             - Credit score improvement timelines
             
             Provide personalized credit improvement strategies based on user's current credit profile.""",
-            model_name="gpt-4o-mini",
+            model_name="groq/llama-3.3-70b-versatile",
             max_loops=3,
             temperature=0.3,
             max_tokens=2000
@@ -110,7 +118,7 @@ class TaxWiseSwarmOrchestrator:
             - Data extraction and categorization
             
             Extract meaningful insights from financial documents and identify patterns.""",
-            model_name="gpt-4o-mini",
+            model_name="groq/llama-3.3-70b-versatile",
             max_loops=3,
             temperature=0.3,
             max_tokens=2000
@@ -129,7 +137,7 @@ class TaxWiseSwarmOrchestrator:
             - Investment portfolio optimization
             
             Always consider the user's complete financial picture when making recommendations.""",
-            model_name="gpt-4o-mini",
+            model_name="groq/llama-3.3-70b-versatile",
             max_loops=3,
             temperature=0.4,
             max_tokens=2000
@@ -148,7 +156,7 @@ class TaxWiseSwarmOrchestrator:
             - Asking clarifying questions when needed
             
             Always be helpful, professional, and focused on the user's financial well-being.""",
-            model_name="gpt-4o-mini",
+            model_name="groq/llama-3.3-70b-versatile",
             max_loops=2,
             temperature=0.5,
             max_tokens=2000

@@ -14,9 +14,10 @@ class TaxWiseSwarms:
         self.data_agent = Agent(
             agent_name="Financial-Data-Processor",
             system_prompt="Process Indian financial documents and categorize transactions...",
-            model_name="groq/llama-3.3-70b-versatile",  # Fast Groq model
+            model_name="groq/llama-3.3-70b-versatile",
             max_loops=1,
-            temperature=0.1
+            temperature=0.1,
+            max_tokens=4000
         )
         
         # Tax Optimization Agent
@@ -25,7 +26,8 @@ class TaxWiseSwarms:
             system_prompt="Calculate Indian tax liabilities and optimization strategies...",
             model_name="groq/llama-3.3-70b-versatile",
             max_loops=1,
-            temperature=0.2
+            temperature=0.2,
+            max_tokens=4000
         )
         
         # CIBIL Analysis Agent
@@ -34,5 +36,6 @@ class TaxWiseSwarms:
             system_prompt="Analyze credit behavior and provide CIBIL improvements...",
             model_name="groq/llama-3.3-70b-versatile",
             max_loops=1,
-            temperature=0.1
+            temperature=0.1,
+            max_tokens=4000
         )
