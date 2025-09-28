@@ -7,6 +7,7 @@ export function FileUpload() {
             'text/csv': ['.csv'],
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx']
         },
+        multiple: true,
         onDrop: (files) => {
             // Process uploaded files
         }

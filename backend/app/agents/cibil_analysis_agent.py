@@ -1,6 +1,5 @@
 """
-CIBIL Score Analysis Agent - Real AI Implementation
-Analyzes credit behavior patterns and provides CIBIL score improvement strategies
+CIBIL Score Analysis Agent - Fresh Responses Only
 """
 
 import os
@@ -33,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 class CibilAnalysisAgent:
     """
-    CIBIL Score Analysis Agent - Real AI Implementation
+    CIBIL Score Analysis Agent - Fresh Responses Only for Each API Call
     """
     
     def __init__(self):
@@ -45,454 +44,280 @@ class CibilAnalysisAgent:
         if not agent_creator:
             raise Exception("Failed to initialize CIBIL agent creator")
         
-        print(f"🔍 DEBUG: Initializing CIBIL AI agent...")
+        # Base session - will create new agents for each API call
+        self.base_session_id = f"cibil_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}"
         
-        # Initialize the real agent
-        self.agent = agent_creator(
-            agent_name="CIBIL-Score-Advisor",
-            system_prompt=self._get_cibil_system_prompt(),
+        print(f"🔍 DEBUG: CIBIL Agent Base Session: {self.base_session_id}")
+        logger.info(f"✅ CIBIL Analysis Agent initialized - Base Session: {self.base_session_id}")
+    
+    def _create_fresh_agent(self, api_type: str) -> Any:
+        """Create a completely fresh agent for each API call"""
+        fresh_session_id = f"{api_type}_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}"
+        
+        print(f"🆕 Creating FRESH agent for {api_type} - Session: {fresh_session_id}")
+        
+        fresh_agent = agent_creator(
+            agent_name=f"CIBIL-{api_type.upper()}-Agent-{fresh_session_id}",
+            system_prompt=self._get_system_prompt(api_type, fresh_session_id),
             groq_api_key=self.groq_api_key
         )
         
-        # CIBIL score factors and weights
-        self.score_factors = {
-            "payment_history": {"weight": 35, "ideal_score": 95},
-            "credit_utilization": {"weight": 30, "ideal_score": 10},  # Ideal <10%
-            "credit_history_length": {"weight": 15, "ideal_score": 240},  # 20+ years in months
-            "credit_mix": {"weight": 10, "ideal_score": 4},  # 4+ different types
-            "new_credit": {"weight": 10, "ideal_score": 0}  # 0 new inquiries
-        }
+        # Ensure completely clean state
+        try:
+            if hasattr(fresh_agent, 'conversation_history'):
+                fresh_agent.conversation_history = []
+            if hasattr(fresh_agent, 'memory'):
+                fresh_agent.memory.clear()
+            if hasattr(fresh_agent, 'chat_history'):
+                fresh_agent.chat_history = []
+        except Exception as e:
+            logger.warning(f"Could not clear history: {e}")
         
-        # Score ranges
-        self.score_ranges = {
-            "poor": {"min": 300, "max": 549, "risk": "High"},
-            "fair": {"min": 550, "max": 649, "risk": "Moderate"},
-            "good": {"min": 650, "max": 749, "risk": "Low"},
-            "excellent": {"min": 750, "max": 900, "risk": "Lowest"}
-        }
+        return fresh_agent, fresh_session_id
+
+    def _get_system_prompt(self, api_type: str, session_id: str) -> str:
+        """Get specialized system prompt for each API type"""
         
-        print(f"✅ DEBUG: CIBIL AI agent initialized")
-        logger.info("✅ CIBIL Analysis Agent initialized (REAL AI ONLY)")
-    
-    def _get_cibil_system_prompt(self) -> str:
-        """Get comprehensive system prompt for CIBIL analysis"""
-        return """You are a CIBIL score improvement specialist with deep expertise in Indian credit systems.
+        base_prompt = f"""You are a specialized CIBIL credit advisor for {api_type.upper()} requests.
 
-CIBIL SCORE FACTORS & WEIGHTS:
-1. **Payment History (35% impact)**:
-   - On-time payment record for all credit accounts
-   - Defaults, late payments, settlements, write-offs
-   - Recent payment behavior weighs more heavily
-   - Target: 100% on-time payments for 24+ months
+SESSION ID: {session_id}
+API TYPE: {api_type}
 
-2. **Credit Utilization (30% impact)**:
-   - Total credit used vs. total credit available
-   - Individual card utilization ratios
-   - Ideal: <10% overall, <30% on any single card
-   - Consider both statement balance and current balance
-
-3. **Credit History Length (15% impact)**:
-   - Age of oldest credit account
-   - Average age of all accounts
-   - Length of relationship with lenders
-   - Target: 7+ years average account age
-
-4. **Credit Mix (10% impact)**:
-   - Variety of credit types: Credit cards, personal loans, home loans, auto loans
-   - Balance between secured and unsecured credit
-   - Revolving vs. installment credit diversity
-   - Target: 3-4 different credit types
-
-5. **New Credit (10% impact)**:
-   - Recent credit inquiries (last 12-24 months)
-   - New accounts opened recently
-   - Rate shopping vs. credit seeking behavior
-   - Target: <2 inquiries per year
-
-INDIAN CREDIT BUREAU SPECIFICS:
-- CIBIL TransUnion (most widely used)
-- Experian, Equifax, CRIF High Mark
-- Score range: 300-900 (higher is better)
-- Free annual report from each bureau
-
-CIBIL SCORE RANGES:
-- 300-549: Poor (Loan rejection likely, high interest rates)
-- 550-649: Fair (Conditional approval, higher rates)
-- 650-749: Good (Better approval odds, competitive rates)
-- 750-900: Excellent (Best rates, premium cards, instant approvals)
-
-IMPROVEMENT STRATEGIES WITH TIMELINES:
-**Immediate Actions (1-30 days):**
-- Pay all outstanding dues immediately
-- Reduce credit card balances below 30%
-- Check credit report for errors and dispute
-- Set up auto-pay for minimum amounts
-
-**Short-term (1-3 months):**
-- Maintain credit utilization <10%
-- Pay bills 2-3 days before due date
-- Request credit limit increases (don't use extra limit)
-- Consolidate multiple small balances
-
-**Medium-term (3-12 months):**
-- Keep old credit cards active with small purchases
-- Diversify credit mix gradually
-- Build emergency fund to avoid credit dependency
-- Monitor score monthly
-
-**Long-term (1-3 years):**
-- Maintain excellent payment history
-- Gradually increase credit limits
-- Consider becoming authorized user on family member's account
-- Build long-term banking relationships
-
-ANALYSIS FRAMEWORK:
-Always provide:
-1. Current estimated score with confidence level
-2. Factor-wise breakdown with impact assessment
-3. Prioritized improvement recommendations
-4. Timeline for expected score changes
-5. Specific action items with measurable targets
-6. Risk assessment and preventive measures
-
-RESPONSE FORMAT:
-Structure responses with clear sections, specific numbers, and actionable timelines.
-Focus on Indian banking practices, EMI culture, and CIBIL-specific factors.
+CRITICAL INSTRUCTIONS:
+- This is a COMPLETELY FRESH REQUEST
+- DO NOT reference any previous conversations or analyses
+- DO NOT mention "previous" or "earlier" discussions
+- Provide ONLY current, specific advice for THIS request
+- Use simple, clear language that a common person can understand
 """
+
+        if api_type == "analysis":
+            return base_prompt + """
+TASK: Provide comprehensive CIBIL score analysis
+
+STRUCTURE YOUR RESPONSE:
+1. CURRENT SCORE ASSESSMENT (2-3 sentences)
+2. KEY FACTORS AFFECTING YOUR SCORE (bullet points, easy to understand)
+3. IMMEDIATE ACTION ITEMS (what to do in next 30 days)
+4. 3-MONTH IMPROVEMENT PLAN (step-by-step)
+5. EXPECTED RESULTS (realistic score improvements)
+6. WARNINGS (what NOT to do)
+
+Use simple language. Explain technical terms. Be specific with amounts and timelines.
+"""
+
+        elif api_type == "report":
+            return base_prompt + """
+TASK: Create a 90-day personalized improvement roadmap
+
+STRUCTURE YOUR RESPONSE AS A CLEAR ROADMAP:
+
+WEEK 1-2: IMMEDIATE ACTIONS
+- List 3-4 specific actions
+- Explain WHY each action helps
+- Mention expected impact
+
+MONTH 1: FOUNDATION BUILDING
+- Step-by-step monthly goals
+- Simple explanations
+- Progress tracking tips
+
+MONTH 2: OPTIMIZATION
+- Advanced strategies
+- Fine-tuning actions
+- Monitoring guidelines
+
+MONTH 3: CONSOLIDATION
+- Final push actions
+- Score stabilization
+- Long-term maintenance
+
+Use simple language. Give specific examples. Mention actual numbers and timelines.
+NO technical jargon. Write like you're explaining to a friend.
+"""
+
+        elif api_type == "scenario":
+            return base_prompt + """
+TASK: Analyze impact of specific financial actions on credit score
+
+FOR EACH SCENARIO PROVIDED:
+
+SCENARIO NAME: [Name from user]
+CURRENT SITUATION: Brief summary
+PREDICTED IMPACT:
+- Score change: [+/- X points]
+- Timeline: [When you'll see results]
+- Confidence: [How sure we are]
+
+WHY THIS HAPPENS:
+- Simple explanation of credit factors affected
+- Real-world impact on credit behavior
+
+STEP-BY-STEP ACTION PLAN:
+1. [First thing to do]
+2. [Second thing to do]
+3. [Third thing to do]
+
+THINGS TO WATCH OUT FOR:
+- Potential negative effects
+- How to avoid problems
+
+Use everyday language. Give specific examples. Be encouraging but realistic.
+"""
+
+        return base_prompt
 
     def analyze_cibil_profile(self, credit_data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Analyze CIBIL profile using real AI
-        """
+        """Generate FRESH CIBIL profile analysis with new agent"""
         try:
-            print(f"🔍 DEBUG: Starting CIBIL AI analysis...")
+            # Create completely fresh agent for this analysis
+            fresh_agent, session_id = self._create_fresh_agent("analysis")
             
-            # Create comprehensive analysis prompt
-            prompt = self._create_cibil_analysis_prompt(credit_data)
+            print(f"🔍 DEBUG: Starting FRESH ANALYSIS - Session: {session_id}")
+            print(f"📊 Input: Score={credit_data.get('current_score')}, Utilization={credit_data.get('current_utilization')}%")
             
-            # Get AI response
-            ai_response = self.agent.run(prompt)
-            
-            # Structure the AI response
-            structured_result = self._structure_cibil_response(ai_response, credit_data)
-            
-            logger.info("✅ CIBIL AI analysis completed")
-            return structured_result
-                
-        except Exception as e:
-            logger.error(f"❌ CIBIL analysis failed: {str(e)}")
-            raise Exception(f"CIBIL analysis failed: {str(e)}")
-    
-    def _create_cibil_analysis_prompt(self, credit_data: Dict[str, Any]) -> str:
-        """Create comprehensive CIBIL analysis prompt"""
-        
-        # Extract credit data with defaults
-        current_score = credit_data.get('current_score', 0)
-        payment_history = credit_data.get('payment_history', 'unknown')
-        credit_cards = credit_data.get('credit_cards', 0)
-        total_credit_limit = credit_data.get('total_credit_limit', 0)
-        current_utilization = credit_data.get('current_utilization', 0)
-        loans = credit_data.get('loans', 0)
-        missed_payments = credit_data.get('missed_payments', 0)
-        account_age = credit_data.get('account_age_months', 0)
-        recent_inquiries = credit_data.get('recent_inquiries', 0)
-        
-        return f"""
-COMPREHENSIVE CIBIL SCORE ANALYSIS REQUEST:
+            # Create analysis prompt
+            prompt = f"""
+FRESH CIBIL ANALYSIS REQUEST - {datetime.now().isoformat()}
 
-Current Credit Profile:
-- Current CIBIL Score: {current_score}
-- Payment History: {payment_history}
-- Number of Credit Cards: {credit_cards}
-- Total Credit Limit: ₹{total_credit_limit:,}
-- Current Utilization: {current_utilization}% (₹{total_credit_limit * current_utilization / 100:,.0f} used)
-- Active Loans: {loans}
-- Missed Payments (Last 24 months): {missed_payments}
-- Oldest Account Age: {account_age} months ({account_age/12:.1f} years)
-- Recent Credit Inquiries (Last 12 months): {recent_inquiries}
+USER'S CREDIT PROFILE:
+- Current CIBIL Score: {credit_data.get('current_score', 0)}
+- Payment History: {credit_data.get('payment_history', 'unknown')}
+- Credit Cards: {credit_data.get('credit_cards', 0)}
+- Total Credit Limit: ₹{credit_data.get('total_credit_limit', 0):,}
+- Current Utilization: {credit_data.get('current_utilization', 0)}%
+- Active Loans: {credit_data.get('loans', 0)}
+- Missed Payments: {credit_data.get('missed_payments', 0)}
+- Account Age: {credit_data.get('account_age_months', 0)} months
+- Recent Inquiries: {credit_data.get('recent_inquiries', 0)}
+- Age: {credit_data.get('age', 30)} years
+- Annual Income: ₹{credit_data.get('income', 500000):,}
 
-REQUIRED DETAILED ANALYSIS:
-
-### 1. CURRENT SCORE ASSESSMENT:
-- Estimated CIBIL Score: [Based on provided data and factors]
-- Score Category: [Poor/Fair/Good/Excellent]
-- Risk Profile: [High/Moderate/Low/Lowest]
-- Score Confidence Level: [High/Medium/Low based on data completeness]
-
-### 2. FACTOR-WISE BREAKDOWN:
-
-**Payment History (35% weight):**
-- Current Status: [Excellent/Good/Fair/Poor]
-- Score Impact: [Positive/Neutral/Negative]
-- Key Issues: [List specific problems if any]
-- Improvement Potential: [High/Medium/Low]
-
-**Credit Utilization (30% weight):**
-- Current Utilization: {current_utilization}%
-- Individual Card Analysis: [If high, suggest specific reductions]
-- Score Impact: [Calculate positive/negative impact]
-- Target Utilization: [Specific percentage and amount]
-
-**Credit History Length (15% weight):**
-- Average Account Age: {account_age/12:.1f} years
-- Oldest Account Impact: [Positive/Negative]
-- Recommendations: [Keep old accounts active/Don't close oldest card]
-
-**Credit Mix (10% weight):**
-- Current Mix: {credit_cards} cards, {loans} loans
-- Mix Quality: [Excellent/Good/Fair/Poor]
-- Missing Elements: [What types of credit to consider]
-
-**New Credit (10% weight):**
-- Recent Inquiries: {recent_inquiries} in last 12 months
-- Impact Assessment: [Positive/Negative/Neutral]
-- Inquiry Management: [Recommendations for future credit applications]
-
-### 3. PRIORITIZED IMPROVEMENT PLAN:
-
-**IMMEDIATE ACTIONS (Next 30 days):**
-1. [Specific action with target amount/percentage]
-2. [Specific action with deadline]
-3. [Specific action with expected impact]
-
-**SHORT-TERM GOALS (1-3 months):**
-1. [Action with specific target and timeline]
-2. [Behavioral change with measurable outcome]
-3. [Account management specific steps]
-
-**MEDIUM-TERM STRATEGY (3-12 months):**
-1. [Strategic moves with expected score impact]
-2. [Credit building activities]
-3. [Relationship building with banks]
-
-**LONG-TERM VISION (1-3 years):**
-1. [Major credit goals]
-2. [Premium credit access targets]
-3. [Wealth building through credit optimization]
-
-### 4. SCORE PROJECTION:
-- Current Score: {current_score}
-- 3-Month Projection: [Score range with actions]
-- 6-Month Projection: [Score range with consistent behavior]
-- 12-Month Projection: [Optimal score with full plan implementation]
-
-### 5. SPECIFIC RECOMMENDATIONS:
-**For Credit Cards:**
-- Optimal utilization per card: [Specific amounts]
-- Payment timing: [When to pay for maximum impact]
-- Limit increase requests: [When and how much]
-
-**For Loans:**
-- EMI management: [Optimization strategies]
-- Prepayment recommendations: [If beneficial]
-- New loan considerations: [Timing and impact]
-
-**For Credit Report:**
-- Monitoring frequency: [How often to check]
-- Error disputes: [Process and timeline]
-- Documentation: [What records to maintain]
-
-### 6. RED FLAGS TO AVOID:
-- Actions that could hurt the score
-- Common mistakes in Indian credit management
-- Timeline-sensitive decisions
-
-### 7. ESTIMATED FINANCIAL IMPACT:
-- Interest savings from better score: ₹[Calculate based on typical loan amounts]
-- Access to premium products: [List benefits]
-- Credit limit improvements: [Expected increases]
-
-Provide specific, actionable recommendations with exact numbers, dates, and expected outcomes.
-Focus on Indian banking practices and CIBIL-specific optimization strategies.
+Analyze this credit profile and provide clear, actionable advice in simple language.
+Focus on practical steps the user can take to improve their score.
 """
-
-    def _structure_cibil_response(self, ai_response: str, credit_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Structure the AI response into API-compatible format"""
-        
-        return {
-            "status": "success",
-            "timestamp": datetime.now().isoformat(),
-            "cibil_analysis": ai_response,
-            "response_source": "Real AI CIBIL Analysis",
-            "input_data": credit_data,
-            "analysis_type": "comprehensive_cibil_profile"
-        }
-    
-    def simulate_score_scenarios(self, scenarios: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """Simulate CIBIL score impact of different scenarios"""
-        try:
-            print(f"🔍 DEBUG: Starting CIBIL scenario simulation...")
             
-            # Create scenario simulation prompt
-            prompt = self._create_scenario_simulation_prompt(scenarios)
+            # Get fresh AI response
+            ai_response = fresh_agent.run(prompt)
             
-            # Get AI response
-            ai_response = self.agent.run(prompt)
-            
-            logger.info("✅ CIBIL scenario simulation completed")
-            
-            return {
+            # Structure the response
+            result = {
                 "status": "success",
                 "timestamp": datetime.now().isoformat(),
-                "scenario_analysis": ai_response,
-                "response_source": "Real AI Scenario Simulation",
-                "input_scenarios": scenarios
+                "response_source": f"Fresh CIBIL Analysis - {session_id}",
+                "session_id": session_id,
+                "cibil_analysis": ai_response,
+                "input_data": credit_data
             }
+            
+            print(f"✅ DEBUG: FRESH ANALYSIS completed - Session: {session_id}")
+            return result
                 
         except Exception as e:
-            logger.error(f"❌ CIBIL scenario simulation failed: {str(e)}")
-            raise Exception(f"Scenario simulation failed: {str(e)}")
-    
-    def _create_scenario_simulation_prompt(self, scenarios: List[Dict[str, Any]]) -> str:
-        """Create scenario simulation prompt"""
-        
-        scenario_text = ""
-        for i, scenario in enumerate(scenarios, 1):
-            scenario_text += f"""
-Scenario {i}: {scenario.get('name', f'Scenario {i}')}
-- Action: {scenario.get('action', 'Unknown')}
-- Current Score: {scenario.get('current_score', 750)}
-- Timeline: {scenario.get('timeline', 'Unknown')}
-- Additional Details: {scenario.get('details', 'None')}
-"""
-        
-        return f"""
-CIBIL SCORE SCENARIO SIMULATION:
-
-Please analyze the following scenarios and predict their impact on CIBIL score:
-
-{scenario_text}
-
-For each scenario, provide:
-
-### SCENARIO IMPACT ANALYSIS:
-
-**Score Change Prediction:**
-- Expected Score Change: [+/- points]
-- Confidence Level: [High/Medium/Low]
-- Timeline for Impact: [Immediate/1-3 months/3-6 months/6-12 months]
-
-**Factor Impact Breakdown:**
-- Payment History Impact: [How this affects payment track record]
-- Credit Utilization Impact: [How this changes utilization ratios]
-- Credit History Impact: [Effect on account age/history]
-- Credit Mix Impact: [How this changes credit diversity]
-- New Credit Impact: [Effect on inquiries/new accounts]
-
-**Risk Assessment:**
-- Potential Negative Effects: [What could go wrong]
-- Mitigation Strategies: [How to minimize negative impact]
-- Best Practices: [How to maximize positive outcome]
-
-**Comparison Analysis:**
-- Rank scenarios from best to worst impact
-- Provide reasoning for rankings
-- Suggest combinations or sequences if applicable
-
-**Implementation Guidelines:**
-- Step-by-step execution plan
-- Timing considerations
-- Monitoring checkpoints
-
-Focus on realistic, data-driven predictions based on Indian CIBIL scoring patterns.
-"""
+            logger.error(f"❌ FRESH CIBIL analysis failed: {str(e)}")
+            raise Exception(f"FRESH CIBIL analysis failed: {str(e)}")
 
     def generate_cibil_report(self, user_profile: Dict[str, Any]) -> Dict[str, Any]:
-        """Generate comprehensive CIBIL improvement report"""
+        """Generate FRESH 90-day improvement report with new agent"""
         try:
-            print(f"🔍 DEBUG: Generating CIBIL report...")
+            # Create completely fresh agent for this report
+            fresh_agent, session_id = self._create_fresh_agent("report")
             
-            # Create report generation prompt
-            prompt = self._create_report_prompt(user_profile)
+            print(f"🔍 DEBUG: Starting FRESH REPORT - Session: {session_id}")
+            print(f"👤 User: Age {user_profile.get('age')}, Score {user_profile.get('current_score')}")
             
-            # Get AI response
-            ai_response = self.agent.run(prompt)
-            
-            logger.info("✅ CIBIL report generation completed")
-            
-            return {
-                "status": "success",
-                "timestamp": datetime.now().isoformat(),
-                "cibil_report": ai_response,
-                "response_source": "Real AI CIBIL Report",
-                "user_profile": user_profile
-            }
-                
-        except Exception as e:
-            logger.error(f"❌ CIBIL report generation failed: {str(e)}")
-            raise Exception(f"Report generation failed: {str(e)}")
-    
-    def _create_report_prompt(self, user_profile: Dict[str, Any]) -> str:
-        """Create comprehensive report generation prompt"""
-        
-        return f"""
-COMPREHENSIVE CIBIL IMPROVEMENT REPORT GENERATION:
+            # Create report prompt
+            prompt = f"""
+FRESH 90-DAY IMPROVEMENT REPORT REQUEST - {datetime.now().isoformat()}
 
-User Profile:
+USER PROFILE:
 - Age: {user_profile.get('age', 30)} years
-- Income: ₹{user_profile.get('income', 500000):,} annually
+- Annual Income: ₹{user_profile.get('income', 500000):,}
 - Current CIBIL Score: {user_profile.get('current_score', 650)}
-- Credit Experience: {user_profile.get('credit_experience', 'Unknown')} years
+- Credit Experience: {user_profile.get('credit_experience', 'Unknown')}
 - Financial Goals: {user_profile.get('goals', 'Credit improvement')}
 
-Generate a comprehensive CIBIL improvement report with the following sections:
-
-### EXECUTIVE SUMMARY
-- Current credit health assessment (1-10 scale)
-- Key strengths and weaknesses
-- Primary improvement opportunities
-- Expected timeline for significant improvement
-
-### CURRENT SCORE ANALYSIS
-- Detailed breakdown of current score factors
-- Comparison with peer group (same age/income)
-- Identification of biggest score drains
-- Quick wins for immediate improvement
-
-### 90-DAY IMPROVEMENT PLAN
-- Week 1-2: Immediate actions
-- Week 3-8: Consistency building
-- Week 9-12: Optimization and monitoring
-- Expected score change: [Range]
-
-### 6-MONTH STRATEGY
-- Monthly milestones and targets
-- Behavioral changes required
-- Account management strategies
-- Credit building activities
-
-### 12-MONTH ROADMAP
-- Long-term score targets
-- Premium credit access goals
-- Financial benefits projection
-- Risk management framework
-
-### PERSONALIZED RECOMMENDATIONS
-Based on age {user_profile.get('age', 30)} and income ₹{user_profile.get('income', 500000):,}:
-- Optimal credit utilization strategy
-- Recommended credit products
-- Account management best practices
-- Monitoring and maintenance plan
-
-### FINANCIAL IMPACT ANALYSIS
-- Interest savings potential
-- Credit access improvements
-- Premium product eligibility
-- Overall financial benefits
-
-### ACTION CHECKLIST
-- Priority 1 (Immediate): [Specific actions]
-- Priority 2 (This month): [Specific actions]
-- Priority 3 (Next 3 months): [Specific actions]
-- Ongoing maintenance: [Regular activities]
-
-Provide specific, actionable recommendations with clear timelines and expected outcomes.
+Create a personalized 90-day action plan that this person can easily follow.
+Use simple language and give specific, actionable steps with clear timelines.
+Make it encouraging and realistic based on their profile.
 """
+            
+            # Get fresh AI response
+            ai_response = fresh_agent.run(prompt)
+            
+            # Structure the response
+            result = {
+                "status": "success",
+                "timestamp": datetime.now().isoformat(),
+                "response_source": f"Fresh 90-Day Report - {session_id}",
+                "session_id": session_id,
+                "cibil_report": ai_response,
+                "user_profile": user_profile
+            }
+            
+            print(f"✅ DEBUG: FRESH REPORT completed - Session: {session_id}")
+            return result
+                
+        except Exception as e:
+            logger.error(f"❌ FRESH report generation failed: {str(e)}")
+            raise Exception(f"FRESH report generation failed: {str(e)}")
 
+    def simulate_score_scenarios(self, scenarios: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Generate FRESH scenario simulation with new agent"""
+        try:
+            # Create completely fresh agent for this scenario analysis
+            fresh_agent, session_id = self._create_fresh_agent("scenario")
+            
+            print(f"🔍 DEBUG: Starting FRESH SCENARIOS - Session: {session_id}")
+            print(f"🎯 Scenarios: {len(scenarios)} to analyze")
+            
+            # Format scenarios for the prompt
+            scenario_text = ""
+            for i, scenario in enumerate(scenarios, 1):
+                scenario_text += f"""
+SCENARIO {i}: {scenario.get('name', f'Scenario {i}')}
+Action: {scenario.get('action', 'Unknown action')}
+Current Score: {scenario.get('current_score', 750)}
+Expected Timeline: {scenario.get('timeline', 'Unknown timeline')}
+---
+"""
+            
+            # Create scenario prompt
+            prompt = f"""
+FRESH SCENARIO IMPACT ANALYSIS REQUEST - {datetime.now().isoformat()}
+
+SCENARIOS TO ANALYZE:
+{scenario_text}
+
+For each scenario above, analyze the potential impact on credit score.
+Explain in simple terms how each action will affect the user's credit.
+Give realistic expectations and practical advice.
+Use encouraging language but be honest about potential challenges.
+"""
+            
+            # Get fresh AI response
+            ai_response = fresh_agent.run(prompt)
+            
+            # Structure the response
+            result = {
+                "status": "success",
+                "timestamp": datetime.now().isoformat(),
+                "response_source": f"Fresh Scenario Analysis - {session_id}",
+                "session_id": session_id,
+                "scenario_analysis": ai_response,
+                "input_scenarios": scenarios
+            }
+            
+            print(f"✅ DEBUG: FRESH SCENARIOS completed - Session: {session_id}")
+            return result
+                
+        except Exception as e:
+            logger.error(f"❌ FRESH scenario simulation failed: {str(e)}")
+            raise Exception(f"FRESH scenario simulation failed: {str(e)}")
+
+# Keep existing helper functions
 def generate_sample_credit_data(num_users: int = 10) -> pd.DataFrame:
-    """
-    Generate sample credit data for testing CIBIL analysis
-    """
+    """Generate sample credit data for testing CIBIL analysis"""
     fake = Faker()
     np.random.seed(42)
     random.seed(42)
@@ -529,47 +354,57 @@ def generate_sample_credit_data(num_users: int = 10) -> pd.DataFrame:
 # Test function
 def test_cibil_agent():
     """Test the CIBIL Analysis Agent"""
-    print("🧪 Testing CIBIL Analysis Agent...")
+    print("🧪 Testing FRESH CIBIL Analysis Agent...")
     
     try:
         agent = CibilAnalysisAgent()
         
-        # Generate sample data
-        sample_data = generate_sample_credit_data(5)
-        print(f"\n📊 Generated sample credit data:")
-        print(sample_data.head())
+        # Test data
+        test_credit_data = {
+            'current_score': 720,
+            'payment_history': 'good',
+            'credit_cards': 3,
+            'total_credit_limit': 500000,
+            'current_utilization': 30.0,
+            'loans': 1,
+            'missed_payments': 1,
+            'account_age_months': 48,
+            'recent_inquiries': 2,
+            'age': 30,
+            'income': 800000
+        }
         
-        # Test with first user
-        test_credit_data = sample_data.iloc[0].to_dict()
-        print(f"\n🔍 Testing with User ID: {test_credit_data['user_id']}")
-        print(f"Current Score: {test_credit_data['current_score']}")
-        print(f"Utilization: {test_credit_data['current_utilization']}%")
+        print(f"🔍 Testing Analysis API")
+        result1 = agent.analyze_cibil_profile(test_credit_data)
+        print(f"✅ Analysis completed - Session: {result1.get('session_id')}")
         
-        # Analyze CIBIL profile
-        result = agent.analyze_cibil_profile(test_credit_data)
-        print(f"✅ CIBIL analysis completed - Response source: {result.get('response_source')}")
+        print(f"🔍 Testing Report API") 
+        report_data = {
+            'age': 30,
+            'income': 800000,
+            'current_score': 720,
+            'credit_experience': '5 years',
+            'goals': 'Improve to 800+'
+        }
+        result2 = agent.generate_cibil_report(report_data)
+        print(f"✅ Report completed - Session: {result2.get('session_id')}")
         
-        # Test scenario simulation
-        scenarios = [
-            {
-                "name": "Pay down credit card debt",
-                "action": "Pay ₹50,000 towards credit cards",
-                "current_score": test_credit_data['current_score'],
-                "timeline": "1 month"
-            },
-            {
-                "name": "Close oldest credit card",
-                "action": "Close 5-year old credit card",
-                "current_score": test_credit_data['current_score'],
-                "timeline": "Immediate"
-            }
-        ]
+        print(f"🔍 Testing Scenario API")
+        scenarios = [{
+            'name': 'Pay down credit card debt',
+            'action': 'Reduce utilization from 30% to 15%',
+            'current_score': 720,
+            'timeline': '2 months'
+        }]
+        result3 = agent.simulate_score_scenarios(scenarios)
+        print(f"✅ Scenarios completed - Session: {result3.get('session_id')}")
         
-        scenario_result = agent.simulate_score_scenarios(scenarios)
-        print(f"✅ Scenario simulation completed")
+        # Verify each session is unique
+        sessions = [result1.get('session_id'), result2.get('session_id'), result3.get('session_id')]
+        print(f"📊 Unique sessions created: {len(set(sessions)) == 3}")
         
     except Exception as e:
-        print(f"❌ CIBIL agent test failed: {str(e)}")
+        print(f"❌ Test failed: {str(e)}")
 
 if __name__ == "__main__":
     test_cibil_agent()
