@@ -141,7 +141,6 @@ export default function ReportsPage() {
 
   const handleDownloadReport = (reportId: string, title: string) => {
     // Simulate PDF download
-    console.log(`Downloading ${title} report...`)
     // In a real app, this would trigger actual PDF download
   }
 

@@ -133,7 +133,6 @@ export default function DocumentsPage() {
     try {
       const result = await documentApi.populateTaxInputsFromDocument(documentId, false)
       success('Success', 'Tax inputs populated from document successfully')
-      console.log('Tax inputs populated:', result.data)
     } catch (err: any) {
       if (err.message.includes('already exist')) {
         const overwrite = confirm('Tax inputs already exist. Do you want to overwrite them with data from this document?')
@@ -141,7 +140,6 @@ export default function DocumentsPage() {
           try {
             const result = await documentApi.populateTaxInputsFromDocument(documentId, true)
             success('Success', 'Tax inputs updated from document successfully')
-            console.log('Tax inputs updated:', result.data)
           } catch (overwriteErr) {
             error('Update Error', overwriteErr instanceof Error ? overwriteErr.message : 'Failed to update tax inputs')
           }

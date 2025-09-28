@@ -4,19 +4,14 @@ import { prisma } from '@/lib/prisma'
 // GET /api/test-db - Test database connection
 export async function GET(request: NextRequest) {
   try {
-    console.log('Testing database connection...')
-    
     // Test basic database connection
     await prisma.$connect()
-    console.log('Database connected successfully')
     
     // Test a simple query
     const userCount = await prisma.user.count()
-    console.log('User count:', userCount)
     
     // Test TaxInput model
     const taxInputCount = await prisma.taxInput.count()
-    console.log('TaxInput count:', taxInputCount)
     
     return NextResponse.json({
       success: true,

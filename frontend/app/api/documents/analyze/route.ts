@@ -69,16 +69,6 @@ export async function POST(request: NextRequest) {
 
     const analysisResult = await backendResponse.json()
     
-    console.log('🔍 Backend analysis result structure:', {
-      hasStructuredAnalysis: !!analysisResult.structured_analysis,
-      hasFinancialSummary: !!analysisResult.financial_summary,
-      hasEnhancedAnalysis: !!analysisResult.enhanced_analysis,
-      confidenceLevel: analysisResult.structured_analysis?.confidence_level,
-      documentType: analysisResult.structured_analysis?.document_type,
-      taxReady: analysisResult.financial_summary?.ready_for_tax_analysis,
-      cibilReady: analysisResult.financial_summary?.ready_for_cibil_analysis
-    })
-
     // Extract specific financial data for storage
     const structuredAnalysis = analysisResult.structured_analysis
     const extractedValues = structuredAnalysis?.extracted_values || {}
